@@ -1,0 +1,66 @@
+version: '3.8'
+env_file:
+  - .env  
+
+services:
+
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+    environment:
+      # Используем переменные из .env
+      POSTGRES_USER: ${POSTGRES_USER}   
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} 
+      POSTGRES_DB: ${POSTGRES_DB}       
+    volumes:
+
+      - pg_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  code-executor:
+    build:
+      context: ./go-executor
+      dockerfile: Dockerfile
+    container_name: go_judger
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8001:8001"
+    environment:
+      - JUDGER_SHARED_DIR=${JUDGER_SHARED_DIR}
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    restart: always
+
+
+  api:
+    build:
+      context: ./fastapi-backend
+      dockerfile: Dockerfile
+    container_name: fastapi_api
+    ports:
+      - "8000:8000"
+    environment:
+
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      DB_HOST: db 
+      DB_PORT: 5432
+      
+
+      CODE_EXECUTION_URL: ${CODE_EXECUTION_URL} 
+    depends_on:
+      db:
+        condition: service_healthy 
+      code-executor:
+        condition: service_started
+    restart: always
+
+volumes:
+  pg_data:

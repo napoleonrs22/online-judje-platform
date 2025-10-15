@@ -1,19 +1,17 @@
 version: '3.8'
-env_file:
-  - .env  
 
 services:
 
   db:
     image: postgres:14-alpine
     container_name: postgres_db
+    env_file:
+      - .env
     environment:
-      # Используем переменные из .env
-      POSTGRES_USER: ${POSTGRES_USER}   
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} 
-      POSTGRES_DB: ${POSTGRES_DB}       
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-
       - pg_data:/var/lib/postgresql/data
     restart: always
     healthcheck:
@@ -22,44 +20,50 @@ services:
       timeout: 5s
       retries: 5
 
-
   code-executor:
     build:
       context: ./go-executor
       dockerfile: Dockerfile
     container_name: go_judger
+    env_file:
+      - .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8001:8001"
     environment:
-      - JUDGER_SHARED_DIR=${JUDGER_SHARED_DIR}
-      - DOCKER_HOST=unix:///var/run/docker.sock
+      JUDGER_SHARED_DIR: ${JUDGER_SHARED_DIR}
+      DOCKER_HOST: unix:///var/run/docker.sock
     restart: always
-
 
   api:
     build:
       context: ./fastapi-backend
       dockerfile: Dockerfile
     container_name: fastapi_api
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     environment:
-
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      DB_HOST: db 
-      DB_PORT: 5432
-      
-
-      CODE_EXECUTION_URL: ${CODE_EXECUTION_URL} 
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      CODE_EXECUTION_URL: ${CODE_EXECUTION_URL}
     depends_on:
       db:
-        condition: service_healthy 
+        condition: service_healthy
       code-executor:
         condition: service_started
+    command: >
+      /bin/sh -c "
+        echo 'Ожидание доступности PostgreSQL...';
+        while ! pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${POSTGRES_USER}; do
+          echo 'PostgreSQL еще недоступен. Ожидание 1 секунду...';
+          sleep 1;
+        done;
+        echo 'PostgreSQL запущен. Запуск FastAPI...';
+        exec uvicorn main:app --host 0.0.0.0 --port 8000
+      "
     restart: always
 
 volumes:

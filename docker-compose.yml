@@ -46,8 +46,12 @@ services:
     ports:
       - "8000:8000"
     environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
+      DATABASE_URL: ${DATABASE_URL}
       CODE_EXECUTION_URL: ${CODE_EXECUTION_URL}
     depends_on:
       db:

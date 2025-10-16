@@ -39,7 +39,6 @@ class SubmissionResponse(BaseModel):
     final_status: str
 
     
-# --- Схемы для Взаимодействия с Go-Executor ---
 class ExecutionTestInput(BaseModel):
     id: str
     input_data: str
@@ -69,8 +68,7 @@ class ProblemBase(BaseModel):
     slug: str
     difficulty: DifficultyLevel
     is_public: bool
-    
-    # Это важно для SQLAlchemy (ормы)
+
     class Config:
         orm_mode = True
 

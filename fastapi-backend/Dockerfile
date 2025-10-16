@@ -4,6 +4,10 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
+# 🔥 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Установка клиента PostgreSQL для команды pg_isready
+RUN apt-get update && apt-get install -y postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
 # Копируем файл зависимостей
 COPY requirements.txt .
 

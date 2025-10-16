@@ -19,7 +19,10 @@ class ProblemRepository:
         stmt = (
             select(Problem)
             .where(Problem.id == problem_id)
-            .options(selectinload(Problem.test_cases))
+            .options(
+                selectinload(Problem.test_cases),
+                selectinload(Problem.examples)
+            )
         )
         result = await self.db.execute(stmt)
         return result.scalars().first()
@@ -48,9 +51,40 @@ class ProblemRepository:
 
     async def list_public_problems(self) -> List[Problem]:
         """Получает список всех опубликованных задач."""
-        stmt = select(Problem).where(Problem.is_public == True)
+        stmt = (
+            select(Problem).where(Problem.is_public == True)
+            .options(
+                selectinload(Problem.test_cases),
+                selectinload(Problem.examples)
+            )
+        )
         result = await self.db.execute(stmt)
         return result.scalars().all()
+
+    async def get_test_cases(self, problem_id:uuid.UUID) ->List[TestCase]:
+
+        stmt = select(TestCase).where(TestCase.problem_id == problem_id).order_by(TestCase.order_index).limit(100)
+
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
+
+    async def get_problem_by_id(self,problem_id:uuid.UUID) ->Optional[Problem]:
+
+        stmt =(
+            select(Problem).where(Problem.id == problem_id)
+            .options(
+                selectinload(Problem.test_cases),
+            )
+            .limit(1)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
+
+    
+
+
+
+        
 
 
 class SubmissionRepository:

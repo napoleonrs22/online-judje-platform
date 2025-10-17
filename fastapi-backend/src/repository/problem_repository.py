@@ -152,7 +152,7 @@ class ProblemRepository:
         accepted_submissions_stmt = (
             select(func.count(Submission.id))
             .where(Submission.problem_id == problem_id)
-            .where(Submission.status == Submission.Status.ACCEPTED)
+            .where(Submission.status == SubmissionStatus.ACCEPTED)
         )
 
         avg_submissions_stmt = (
@@ -161,17 +161,17 @@ class ProblemRepository:
                 func.avg(Submission.memory_used).label('avg_memory'),
             )
             .where(or_(
-                Submission.status == Submission.Status.ACCEPTED,
-                Submission.status == Submission.Status.WRONG_ANSWER,
+                Submission.status == SubmissionStatus.ACCEPTED,
+                Submission.status == SubmissionStatus.WRONG_ANSWER,
             ))
         )
 
-        total_submissions = (await self.db.execute(total_submissions_stmt)).scalar_one()
-        accepted_submissions = (await self.db.execute(accepted_submissions_stmt)).scalar_one()
+        total_submissions = (await self.db.execute(total_submissions_stmt)).scalar() or 0
+        accepted_submissions = (await self.db.execute(accepted_submissions_stmt)).scalar() or 0
         avg_metrics_result = (await self.db.execute(avg_submissions_stmt)).one_or_none()
 
 
-        avg_tme = avg_metrics_result.avg_time if avg_metrics_result else None
+        avg_time = avg_metrics_result.avg_time if avg_metrics_result else None
         avg_memory = avg_metrics_result.avg_memory if avg_metrics_result else None
 
         if total_submissions > 0:
@@ -183,23 +183,21 @@ class ProblemRepository:
             'total_submissions': total_submissions,
             'accepted_submissions': accepted_submissions,
             'success_rate': round(success_rate, 2),
-            'avg_time_ms': round(avg_tme, 2) if avg_tme else None,
+            'avg_time_ms': round(avg_time, 2) if avg_time else None,
             'avg_memory_mb': round(avg_memory, 2) if avg_memory else None,
         }
+
 class SubmissionRepository:
-    """Репозиторий для доступа к данным об Отправках."""
-    
+
     def __init__(self, db: AsyncSession):
         self.db = db
 
     async def create_submission(self, submission: Submission):
-        """Создает новую запись об отправке (PENDING)."""
         self.db.add(submission)
         await self.db.flush()
         return submission
 
     async def update_submission(self, submission: Submission):
-        """Обновляет статус и результаты отправки (COMMITTED)."""
 
         await self.db.commit()
         await self.db.refresh(submission)

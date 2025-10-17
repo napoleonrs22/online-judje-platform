@@ -1,7 +1,11 @@
-# fastapi-backend/requirements.txt
 fastapi
 uvicorn[standard]
 pydantic
 httpx
 sqlalchemy[asyncio]
 asyncpg
+alembic
+psycopg2-binary
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart

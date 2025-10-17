@@ -1,4 +1,5 @@
 # fastapi-backend/src/repository/problem_repo.py
+from unittest import result
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -80,7 +81,49 @@ class ProblemRepository:
         result = await self.db.execute(stmt)
         return result.scalars().first()
 
-    
+    async  def delete_problem(self, problem_id:uuid.UUID) -> Optional[Problem]:
+
+        stmt = (
+            select(Problem).where(Problem.id  == problem_id)
+            .options(
+                selectinload(Problem.test_cases),
+            )
+            .limit(1)
+        )
+        result = await  self.db.execute(stmt)
+        return result.scalars().first()
+
+        if problem:
+            await  self.db.delete(problem)
+            await self.db.commit()
+            return problem
+
+        return None
+
+
+    async  def list_public_problems_with_filters(self, filters: dict) -> List[Problem]:
+
+        stmt = (
+            select(Problem).where(Problem.is_public == True)
+            .order_by(Problem.created_at.desc())
+            .limit(100)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
+
+
+    async def get_user_problems(self, user_id:uuid.UUID) -> List[Problem]:
+
+        stmt = (
+            select(Problem).where(Problem.user_id == user_id)
+            .order_by(Problem.created_at.desc())
+            .limit(100)
+
+        )
+
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
+
 
 
 

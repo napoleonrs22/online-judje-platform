@@ -34,18 +34,21 @@ class ProblemService:
         self.problem_repo = problem_repo
         self.submission_repo = submission_repo
 
-
     async def create_problem(self, problem_data: ProblemCreate) -> Problem:
         """Бизнес-логика создания задачи (генерация slug, сохранение через репозиторий)."""
-        
+
         problem_dict = problem_data.dict(exclude={"examples", "test_cases"})
-        problem_dict["slug"] = generate_slug(problem_data.title) 
-        
+
+        # 🔥 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Добавление временного user_id
+        # В реальном приложении здесь был бы user_id, полученный через Depends(current_user)
+        problem_dict["user_id"] = uuid.uuid4()
+
+        problem_dict["slug"] = generate_slug(problem_data.title)
+
         examples_data = [ex.dict() for ex in problem_data.examples]
         test_cases_data = [test.dict() for test in problem_data.test_cases]
-        
-        return await self.problem_repo.create_problem(problem_dict, examples_data, test_cases_data)
 
+        return await self.problem_repo.create_problem(problem_dict, examples_data, test_cases_data)
 
     async def submit_solution_to_go(self, submission_data: SubmissionCreate) -> SubmissionResponse:
         """Обрабатывает всю логику отправки решения на Go-Executor (Бизнес-логика)."""

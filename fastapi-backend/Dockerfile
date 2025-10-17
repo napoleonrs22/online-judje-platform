@@ -14,6 +14,9 @@ COPY requirements.txt .
 # Устанавливаем зависимости
 RUN pip install --no-cache-dir -r requirements.txt
 
+
+COPY alembic.ini .
+
 # Копируем остальной код проекта
 COPY . .
 

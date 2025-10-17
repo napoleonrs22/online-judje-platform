@@ -32,25 +32,26 @@ class SubmissionStatus(str, enum.Enum):
 
 
 class Problem(Base):
-    """Модель для задачи (основная информация)."""
     __tablename__ = "problems"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+
     title = Column(String(200), nullable=False)
     slug = Column(String(200), unique=True, index=True)
     description = Column(Text, nullable=False)
-    
-    time_limit = Column(Integer, default=1000) # мс
-    memory_limit = Column(Integer, default=256) # МБ
-    
+
+    time_limit = Column(Integer, default=1000)
+    memory_limit = Column(Integer, default=256)
+
     difficulty = Column(Enum(DifficultyLevel), nullable=False)
     checker_type = Column(Enum(CheckerType), nullable=False, default=CheckerType.EXACT)
     is_public = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    author = relationship("User", back_populates="problems")
     examples = relationship("Example", back_populates="problem")
     test_cases = relationship("TestCase", back_populates="problem")
-
 
 class TestCase(Base):
     """Модель для скрытых тестов."""
@@ -86,8 +87,11 @@ class Submission(Base):
     __tablename__ = "submissions"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     problem_id = Column(UUID(as_uuid=True), ForeignKey("problems.id"), nullable=False)
-    
+
+    user = relationship("User", back_populates="submissions")
+    problem = relationship("Problem")
     language = Column(String(50), nullable=False)
     code = Column(Text, nullable=False)
     
@@ -100,3 +104,19 @@ class Submission(Base):
     
     submitted_at = Column(DateTime, default=datetime.utcnow)
 
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    username = Column(String(100), unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    role = Column(String(50), nullable=False)  # "student", "teacher", "admin"
+    full_name = Column(String(200), nullable=True)
+    university_id = Column(String(100), nullable=True)
+    rating = Column(Integer, default=1500)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    problems = relationship("Problem", back_populates="author")
+    submissions = relationship("Submission", back_populates="user")

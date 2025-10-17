@@ -14,6 +14,11 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL not set in .env")
 
+
+if not DATABASE_URL.startswith("postgresql+asyncpg://"):
+    # Заменяем синхронный префикс на асинхронный, если его нет.
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+
 engine = create_async_engine(DATABASE_URL, echo=True)
 
 AsyncSessionLocal = sessionmaker(

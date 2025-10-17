@@ -2,7 +2,7 @@
 from unittest import result
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select,delete, func, or_
 from sqlalchemy.orm import selectinload
 from typing import Optional, List
 import uuid
@@ -16,7 +16,6 @@ class ProblemRepository:
         self.db = db
 
     async def get_problem_by_id_with_tests(self, problem_id: uuid.UUID) -> Optional[Problem]:
-        """Получает задачу по ID, включая связанные тест-кейсы (для выполнения)."""
         stmt = (
             select(Problem)
             .where(Problem.id == problem_id)
@@ -73,44 +72,38 @@ class ProblemRepository:
 
         stmt =(
             select(Problem).where(Problem.id == problem_id)
-            .options(
-                selectinload(Problem.test_cases),
-            )
-            .limit(1)
         )
         result = await self.db.execute(stmt)
         return result.scalars().first()
 
-    async  def delete_problem(self, problem_id:uuid.UUID) -> Optional[Problem]:
+    async  def delete_problem(self, problem_id:uuid.UUID) -> Optional[uuid.UUID]:
 
-        stmt = (
-            select(Problem).where(Problem.id  == problem_id)
-            .options(
-                selectinload(Problem.test_cases),
-            )
-            .limit(1)
-        )
+        stmt = delete(Problem).where(Problem.id  == problem_id).returning(Problem.id)
+
         result = await  self.db.execute(stmt)
         return result.scalars().first()
 
-        if problem:
-            await  self.db.delete(problem)
-            await self.db.commit()
-            return problem
+        if deleted_id:
+            await self.db.close()
+            return deleted_id
 
         return None
 
 
-    async  def list_public_problems_with_filters(self, filters: dict) -> List[Problem]:
 
+    async  def list_public_problems_with_filters(self, difficulty=None,skip=0, limit=50) -> List[Problem]:
+
+        stmt = select(Problem).where(Problem.is_public == True)
+
+        if difficulty:
+            stmt = stmt.where(Problem.difficulty == difficulty)
         stmt = (
-            select(Problem).where(Problem.is_public == True)
-            .order_by(Problem.created_at.desc())
-            .limit(100)
+            stmt.order_by(Problem.created_at.desc())
+            .offset(skip)
+            .limit(limit)
         )
         result = await self.db.execute(stmt)
         return result.scalars().all()
-
 
     async def get_user_problems(self, user_id:uuid.UUID) -> List[Problem]:
 
@@ -126,10 +119,73 @@ class ProblemRepository:
 
 
 
+    async def update_problem(self, problem_id:uuid.UUID, data: dict) -> Optional[Problem]:
 
-        
+        stmt = (
+            select(Problem).where(Problem.id == problem_id)
+        )
+
+        result = await self.db.execute(stmt)
+
+        db_problem = result.scalar_one_or_none()
+
+        if db_problem is None:
+            return None
+
+        for key, value in data.items():
+            if key not in ['id', 'created_at']:
+                setattr(db_problem, key, value)
+
+        await self.db.commit()
+
+        await self.db.refresh(db_problem)
+        return db_problem
+
+    async def get_problem_statistics(self, problem_id:uuid.UUID) ->dict:
 
 
+        total_submissions_stmt = (
+            select(func.count(Submission.id))
+            .where(Submission.problem_id == problem_id)
+        )
+
+        accepted_submissions_stmt = (
+            select(func.count(Submission.id))
+            .where(Submission.problem_id == problem_id)
+            .where(Submission.status == Submission.Status.ACCEPTED)
+        )
+
+        avg_submissions_stmt = (
+            select(
+                func.avg(Submission.execution_time).label('avg_time'),
+                func.avg(Submission.memory_used).label('avg_memory'),
+            )
+            .where(or_(
+                Submission.status == Submission.Status.ACCEPTED,
+                Submission.status == Submission.Status.WRONG_ANSWER,
+            ))
+        )
+
+        total_submissions = (await self.db.execute(total_submissions_stmt)).scalar_one()
+        accepted_submissions = (await self.db.execute(accepted_submissions_stmt)).scalar_one()
+        avg_metrics_result = (await self.db.execute(avg_submissions_stmt)).one_or_none()
+
+
+        avg_tme = avg_metrics_result.avg_time if avg_metrics_result else None
+        avg_memory = avg_metrics_result.avg_memory if avg_metrics_result else None
+
+        if total_submissions > 0:
+            success_rate = (accepted_submissions / total_submissions) * 100
+        else:
+            success_rate = 0
+
+        return {
+            'total_submissions': total_submissions,
+            'accepted_submissions': accepted_submissions,
+            'success_rate': round(success_rate, 2),
+            'avg_time_ms': round(avg_tme, 2) if avg_tme else None,
+            'avg_memory_mb': round(avg_memory, 2) if avg_memory else None,
+        }
 class SubmissionRepository:
     """Репозиторий для доступа к данным об Отправках."""
     

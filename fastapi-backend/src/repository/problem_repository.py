@@ -2,14 +2,18 @@
 from unittest import result
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select,delete, func, or_
+from sqlalchemy import select, delete, func, or_
 from sqlalchemy.orm import selectinload
 from typing import Optional, List
 import uuid
 
-from ..models.db_models import Submission, SubmissionStatus
-from  ..models.problem_models import Problem, Example, TestCase
+# 🔥 ИСПРАВЛЕНО: Submission и Problem теперь импортируются из своих файлов!
+from ..models.base import SubmissionStatus # Enum
+from ..models.problem_models import Problem, Example, TestCase # ORM-модели задач
 from ..models.submission_models import Submission
+
+
+
 class ProblemRepository:
     """Репозиторий для доступа к данным о Задачах и их Тестах."""
     

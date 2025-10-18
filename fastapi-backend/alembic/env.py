@@ -1,16 +1,18 @@
 """Alembic configuration file."""
 
 from logging.config import fileConfig
-import os  # 🔥 НУЖЕН ИМПОРТ OS
-import  sys
+import os
+import sys
+# Добавляем корневую директорию проекта в Python Path, чтобы разрешить импорт src.*
 sys.path.append(os.getcwd())
+
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 
 from src.database import Base
-# Убедись, что все модели импортированы здесь
-from src.models.db_models import Problem, Submission, TestCase, Example  # Удалил User, т.к. его нет в db_models
+
+from src.models import User, Problem, TestCase, Example, Submission
 
 # this is the Alembic Config object
 config = context.config

@@ -1,6 +1,6 @@
-from .base import Base, Column, UUID, String, Integer, DateTime, relationship, datetime, uuid
-
-
+from .base import (
+    Base, Column, UUID, String, Integer, DateTime, relationship, datetime, uuid # <-- Импорт должен работать
+)
 
 class User(Base):
     __tablename__ = "users"

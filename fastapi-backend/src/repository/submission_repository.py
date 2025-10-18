@@ -4,7 +4,7 @@ from typing import Optional, List
 import uuid
 
 from ..models.submission_models import Submission
-from ..models.db_models import SubmissionStatus
+from ..models.base import SubmissionStatus
 
 
 

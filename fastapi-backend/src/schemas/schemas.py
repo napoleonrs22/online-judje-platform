@@ -3,7 +3,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Literal, Optional
 import uuid
-from ..models.db_models import DifficultyLevel, CheckerType 
+from ..models.base import DifficultyLevel, CheckerType
 
 SUPPORTED_LANGUAGES = Literal["python", "java", "cpp", "javascript"]
 

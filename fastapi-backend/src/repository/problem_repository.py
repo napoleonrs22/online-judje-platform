@@ -7,8 +7,9 @@ from sqlalchemy.orm import selectinload
 from typing import Optional, List
 import uuid
 
-from ..models.db_models import Problem, Submission, SubmissionStatus, TestCase, Example
-
+from ..models.db_models import Submission, SubmissionStatus
+from  ..models.problem_models import Problem, Example, TestCase
+from ..models.submission_models import Submission
 class ProblemRepository:
     """Репозиторий для доступа к данным о Задачах и их Тестах."""
     
@@ -202,3 +203,18 @@ class SubmissionRepository:
         await self.db.commit()
         await self.db.refresh(submission)
         return submission
+
+    async  def get_submission_by_id(self, submission_id: uuid.UUID) -> Optional[Submission]:
+        stmt = (
+            select(Submission).where(Submission.id == submission_id)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
+
+    async def get_submissions(self,user_id, skip=0, limit=50) -> List[Submission]:
+        stmt = (
+            select(Submission).where(Submission.user_id == user_id)
+            .offset(skip)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().all()

@@ -11,7 +11,8 @@ from typing import List
 
 from ..schemas.schemas import SubmissionCreate, ExecutionResponseGo, SubmissionResponse, ExecutionTestInput, ProblemCreate
 from ..models.db_models import Submission, SubmissionStatus, Problem
-from ..repository.problem_repository import ProblemRepository, SubmissionRepository 
+from ..repository.problem_repository import ProblemRepository
+from  ..repository.submission_repository import SubmissionRepository
 
 CODE_EXECUTION_URL = os.getenv("CODE_EXECUTION_URL", "http://code-executor:8001/execute")
 

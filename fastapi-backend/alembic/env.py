@@ -1,72 +1,45 @@
-"""Alembic configuration file."""
-
+import asyncio
 from logging.config import fileConfig
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from alembic import context
 import os
 import sys
-# Добавляем корневую директорию проекта в Python Path, чтобы разрешить импорт src.*
-sys.path.append(os.getcwd())
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-from alembic import context
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from src.database import Base
+from models.base import Base  # твой Base с metadata
+# from models.user_models import User  # если нужно явно импортировать модели
 
-from src.models import User, Problem, TestCase, Example, Submission
-
-# this is the Alembic Config object
+# Alembic Config object
 config = context.config
-
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
 
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+asyncpg://olympiad_user:olympiad_pass@db:5432/olympiad_db"
+)
 
-def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode."""
-    # 🔥 ИСПРАВЛЕНИЕ: Используем переменную окружения, если она есть
-    url = os.environ.get("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
-
-    context.configure(
-        url=url,
-        target_metadata=target_metadata,
-        literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
-    )
-
+def run_migrations_offline():
+    url = DATABASE_URL
+    context.configure(url=url, target_metadata=target_metadata, literal_binds=True)
     with context.begin_transaction():
         context.run_migrations()
 
+def do_run_migrations(connection):
+    context.configure(connection=connection, target_metadata=target_metadata)
+    with context.begin_transaction():
+        context.run_migrations()
 
-def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
-
-    # Получаем настройки из alembic.ini
-    section = config.get_section(config.config_ini_section, {})
-
-    # 🔥 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: ПЕРЕЗАПИСЬ URL из переменной окружения
-    # Это гарантирует, что мы используем правильный логин/пароль из Docker Compose.
-    target_url = os.environ.get("DATABASE_URL")
-    if target_url:
-        section['sqlalchemy.url'] = target_url
-
-    connectable = engine_from_config(
-        section,  # Используем обновленную секцию
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
-
+async def run_migrations_online():
+    connectable = create_async_engine(DATABASE_URL, poolclass=pool.NullPool)
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+    await connectable.dispose()
 
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    asyncio.run(run_migrations_online())

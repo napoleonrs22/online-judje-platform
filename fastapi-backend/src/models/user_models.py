@@ -17,3 +17,5 @@ class User(Base):
 
     problems = relationship("Problem", back_populates="author")
     submissions = relationship("Submission", back_populates="user")
+
+    refresh_token_hash = Column(String, nullable=True)

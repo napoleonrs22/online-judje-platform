@@ -1,6 +1,6 @@
 # fastapi-backend/src/schemas/schemas.py
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import List, Literal, Optional
 import uuid
 from ..models.base import DifficultyLevel, CheckerType
@@ -71,4 +71,30 @@ class ProblemBase(BaseModel):
 
     class Config:
         orm_mode = True
+
+class UserBase(BaseModel):
+    id: uuid.UUID
+    username: str
+    email: EmailStr
+    role: str
+    full_name: Optional[str] = None
+    rating: int
+
+    class Config:
+        orm_mode = True
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    username: str
+    password: str = Field(..., min_length=8, max_length=72)
+    role: Literal["student", "teacher", "admin"] = "student"
+    full_name: Optional[str] = None
+
+class LoginData(BaseModel):
+    email: EmailStr
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 

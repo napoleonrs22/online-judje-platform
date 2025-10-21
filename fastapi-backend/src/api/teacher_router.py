@@ -46,7 +46,6 @@ async def create_problem(
     problem_service: ProblemService = services["problem"]
 
     db_problem = await problem_service.create_problem(problem_data, user_id)
-    # db_problem = await problem_service.create_problem(problem_data, TEMP_TEACHER_ID)
 
     return {"message": "Задача успешно создана", "problem_id": db_problem.id, "slug": db_problem.slug}
 

@@ -22,7 +22,7 @@ class Problem(Base):
     is_public = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    author = relationship("User", back_populates="problems")  # 'User' будет найдена по имени
+    author = relationship("User", back_populates="problems") 
     examples = relationship("Example", back_populates="problem")
     test_cases = relationship("TestCase", back_populates="problem")
 

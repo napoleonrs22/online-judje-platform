@@ -8,9 +8,10 @@ from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy.future import select  # 🔥 НОВЫЙ ИМПОРТ для проверки пользователя
 
 # --- Импорты из файлов проекта ---
-from src.database import init_db, AsyncSessionLocal  # 🔥 ИМПОРТ AsyncSessionLocal
+from src.database import init_db, AsyncSessionLocal  
 from src.api.teacher_router import teacher_router
 from src.api.student_router import student_router
+from src.api.auth_router import auth_router
 # 🔥 ИМПОРТ ORM-модели User
 from src.models.user_models import User
 from src.models import base as models_base  # Используем 'base' для доступа к Enum'ам
@@ -81,6 +82,6 @@ def generate_slug(title: str) -> str:
 
     return slug
 
-
+app.include_router(auth_router)
 app.include_router(teacher_router)
 app.include_router(student_router)

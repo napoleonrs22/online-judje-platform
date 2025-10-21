@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from typing import Optional, List
 import uuid
 
@@ -39,3 +39,11 @@ class SubmissionRepository:
         )
         result = await self.db.execute(stmt)
         return result.scalars().all()
+
+    async def delete_submissions(self, submissions_id: List[uuid.UUID]):
+
+        stmt = (
+            delete(Submission).where(Submission.submission_id.in_(submissions_id))
+            .where(Submission.status == SubmissionStatus.PENDING)
+        )
+        await self.db.execute(stmt)

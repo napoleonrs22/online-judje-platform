@@ -1,5 +1,5 @@
 from .base import Base, Column, UUID, String, Text, DateTime, ForeignKey, Enum, JSON, Integer, relationship, datetime, uuid
-from .base import SubmissionStatus # Импортируем Enum статуса
+from .base import SubmissionStatus 
 
 class Submission(Base):
     """Модель для хранения отправленных решений студентов."""

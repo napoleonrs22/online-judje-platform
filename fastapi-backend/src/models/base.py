@@ -5,13 +5,12 @@ from sqlalchemy import (
     JSON, Boolean
 )
 from sqlalchemy.orm import relationship 
-# Импорты для утилит
+
 from datetime import datetime
 import enum
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 
-# 🔥 КЛЮЧ: Импортируем Base только из ВНЕШНЕГО модуля database.py
 from ..database import Base
 
 class DifficultyLevel(str, enum.Enum):

@@ -1,5 +1,5 @@
 from .base import (
-    Base, Column, UUID, String, Integer, DateTime, relationship, datetime, uuid # <-- Импорт должен работать
+    Base, Column, UUID, String, Integer, DateTime, relationship, datetime, uuid
 )
 
 class User(Base):

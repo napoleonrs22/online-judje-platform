@@ -7,27 +7,24 @@ import uuid  # Нужен для user_id заглушки
 
 from ..database import get_db
 from ..schemas.schemas import SubmissionCreate, SubmissionResponse, ProblemBase
-# Импортируем репозитории и сервисы
 from ..repository.problem_repository import ProblemRepository
 from ..repository.submission_repository import SubmissionRepository
 from ..services.problem_service import ProblemService
 from ..services.submission_service import SubmissionService
+from ..services.auth_service import get_current_student
+from ..models.user_models import User
 
 student_router = APIRouter(prefix="/api/student", tags=["Функционал студента"])
 
 
-# 💡 НОВАЯ ЕДИНАЯ ЗАВИСИМОСТЬ: Возвращает словарь с обоими сервисами
 async def get_services(db: AsyncSession = Depends(get_db)) -> Dict:
     problem_repo = ProblemRepository(db)
     submission_repo = SubmissionRepository(db)
-
-    # 🔥 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем ИМЕНОВАННЫЕ АРГУМЕНТЫ для исключения путаницы!
-    # Это гарантирует, что problem_repository в сервисе получит ProblemRepository.
     submission_service = SubmissionService(
         submission_repository=submission_repo,
         problem_repository=problem_repo
     )
-    problem_service = ProblemService(problem_repo, submission_repo)  # ProblemService использует короткие имена
+    problem_service = ProblemService(problem_repo, submission_repo)  
 
     return {
         "problem": problem_service,
@@ -38,25 +35,22 @@ async def get_services(db: AsyncSession = Depends(get_db)) -> Dict:
 @student_router.post("/submissions", status_code=status.HTTP_202_ACCEPTED, response_model=SubmissionResponse)
 async def submit_solution(
         submission_data: SubmissionCreate,
-        services: Dict = Depends(get_services)  # Запрашиваем словарь
+        services: Dict = Depends(get_services),
+        current_user: User = Depends(get_current_student)  
 ):
     """Отправка решения студентом на проверку в Go-Executor."""
 
-    # Имитация ID студента
-    user_id = uuid.uuid4()
 
-    # 💡 Вызываем SubmissionService из словаря
-    response = await services["submission"].submit_solution(submission_data, user_id)
+    response = await services["submission"].submit_solution(submission_data, user_id= current_user.id)
 
     return response
 
 
 @student_router.get("/problems", response_model=List[ProblemBase])
 async def list_problems(
-        services: Dict = Depends(get_services)  # Запрашиваем словарь
+        services: Dict = Depends(get_services)  
 ):
     """Получение списка всех опубликованных задач."""
-    # 💡 Вызываем ProblemService
     problems = await services["problem"].problem_repo.list_public_problems()
 
     return problems

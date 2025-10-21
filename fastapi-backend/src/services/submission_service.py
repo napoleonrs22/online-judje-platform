@@ -3,13 +3,14 @@ import os
 import uuid
 from fastapi import HTTPException
 from starlette import status
-from typing import Optional
+from typing import Optional, List
 
 from ..schemas.schemas import (
     SubmissionCreate,
     ExecutionResponseGo,
     SubmissionResponse,
     ExecutionTestInput,
+
 )
 from ..models.submission_models import Submission
 from ..models.problem_models import Problem
@@ -108,3 +109,93 @@ class SubmissionService:
             final_status=db_submission.status.value,
             message=message,
         )
+
+    async def delete_submission(self, submission_id: str) -> SubmissionResponse:
+        if not submission_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            submission_uuid =uuid.UUID(submission_id)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="uuid не правильный")
+
+        deleted_count = await self.submission_repository.delete_submissions([submission_uuid])
+
+        if deleted_count == 0 :
+            existing_submission = await self.submission_repository.get_submission_by_id(submission_uuid)
+
+            if not existing_submission:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="submission not found",
+                )
+
+            if existing_submission.status == SubmissionStatus.PENDING:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Невозможно удалить. Submission находится в статусе {existing_submission.status.value}. Удалять разрешено только PENDING."
+                )
+
+        return SubmissionResponse(
+            submission_id=submission_id,
+            status="DELETED",
+            score=None,
+            test_results=None,
+            message = "Submission успешно удален.",
+            final_status = "DELETED",
+
+        )
+
+    async def get_user_submissions(
+            self, user_id: uuid.UUID, skip: int = 0, limit: int = 50
+    ) -> List[SubmissionResponse]:
+
+        db_submissions = await self.submission_repository.get_user_submissions(
+            user_id, skip=skip, limit=limit
+        )
+
+
+        return [
+            SubmissionResponse(
+                submission_id=sub.id,
+                status=sub.status.value,
+                final_status=sub.status.value,
+                message=sub.error_message or f"Статус: {sub.status.value}",
+                execution_time=None,
+                memory_used=None,
+                test_results=None,
+                score=None,
+            )
+            for sub in db_submissions
+        ]
+
+    async def get_submission(self, submission_id: str) -> SubmissionResponse:
+        if not submission_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="не указан submission_id",
+            )
+        try:
+            submission_uuid =uuid.UUID(submission_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Неправильный формат uuid для submission_id",
+            )
+        db_submission = await self.submission_repository.get_submission_by_id(submission_uuid)
+
+        if not db_submission:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Submission id {submission_uuid} not found",
+            )
+
+        return SubmissionResponse(
+            submission_id=db_submission.id,
+            status=db_submission.status.value,
+            final_status=db_submission.status.value,
+            message=db_submission.error_message if db_submission.error_message else db_submission.status
+
+        )
+

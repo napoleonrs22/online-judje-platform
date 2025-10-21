@@ -40,10 +40,26 @@ class SubmissionRepository:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def delete_submissions(self, submissions_id: List[uuid.UUID]):
+    async def delete_submissions(self, submissions_id: List[uuid.UUID]) -> int:
 
         stmt = (
-            delete(Submission).where(Submission.submission_id.in_(submissions_id))
+            delete(Submission)
+            .where(Submission.id.in_(submissions_id))
             .where(Submission.status == SubmissionStatus.PENDING)
         )
-        await self.db.execute(stmt)
+        result = await self.db.execute(stmt)
+        await self.db.commit()
+        await self.db.close()
+        return result.rowcount
+
+    async def get_user_submissions(self, user_id, skip=0, limit=50) -> List[Submission]:
+
+        stmt = (
+            select(Submission).where(Submission.user_id == user_id)
+            .offset(skip)
+            .limit(limit)
+            .order_by(Submission.id)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
+

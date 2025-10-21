@@ -49,7 +49,6 @@ class ProblemService:
         """Получает список всех опубликованных задач."""
         return await self.problem_repo.list_public_problems()
 
-
     # async def get_problem_by_id(self, problem_id) -> Optional[Problem]: ...
     # async def update_problem(self, problem_id, data) -> Optional[Problem]: ...
     # async def get_problem_statistics(self, problem_id) -> dict:

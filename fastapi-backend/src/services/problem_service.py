@@ -30,15 +30,35 @@ class ProblemService:
         self.problem_repo = problem_repo
         self.submission_repo = submission_repo
 
+    async def _generate_unique_slug(self, title: str) -> str:
+        """
+        Генерирует уникальный slug, проверяя его наличие в БД через репозиторий.
+        При необходимости добавляет числовой постфикс (-1, -2 и т.д.).
+        """
+        base_slug = generate_slug(title)
+        final_slug = base_slug
+        counter = 0
+
+        while await self.problem_repo.check_slug_exists(final_slug):
+            counter += 1
+            final_slug = f"{base_slug}-{counter}"
+
+            if counter > 1000:
+                # Меры предосторожности от бесконечного цикла, если что-то пошло не так
+                raise Exception("Ошибка генерации slug: превышено 1000 попыток.")
+
+        return final_slug
+
     async def create_problem(self, problem_data: ProblemCreate, user_id: uuid.UUID) -> Problem:
         """Бизнес-логика создания задачи (генерация slug, сохранение через репозиторий)."""
 
-
+        unique_slug = await self._generate_unique_slug(problem_data.title)
         problem_dict = problem_data.dict(exclude={"examples", "test_cases"})
 
 
         problem_dict["user_id"] = user_id
-        problem_dict["slug"] = generate_slug(problem_data.title)
+        problem_dict["slug"] = unique_slug
+
 
         examples_data = [ex.dict() for ex in problem_data.examples]
         test_cases_data = [test.dict() for test in problem_data.test_cases]
@@ -48,6 +68,15 @@ class ProblemService:
     async def list_public_problems(self) -> List[Problem]:
         """Получает список всех опубликованных задач."""
         return await self.problem_repo.list_public_problems()
+
+
+    async  def get_problem_by_id(self, problem_id: int) -> Optional[Problem]:
+
+        return await self.problem_repo.get_problem_by_id(problem_id)
+
+    async  def update_problem(self, problem_id:uuid.UUID, data: dict) -> Optional[Problem]:
+
+        return await self.problem_repo.update_problem(problem_id, data)
 
     # async def get_problem_by_id(self, problem_id) -> Optional[Problem]: ...
     # async def update_problem(self, problem_id, data) -> Optional[Problem]: ...

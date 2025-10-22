@@ -7,7 +7,6 @@ from sqlalchemy.orm import selectinload
 from typing import Optional, List
 import uuid
 
-# 🔥 ИСПРАВЛЕНО: Submission и Problem теперь импортируются из своих файлов!
 from ..models.base import SubmissionStatus # Enum
 from ..models.problem_models import Problem, Example, TestCase # ORM-модели задач
 from ..models.submission_models import Submission
@@ -81,11 +80,18 @@ class ProblemRepository:
         result = await self.db.execute(stmt)
         return result.scalars().first()
 
+    async def check_slug_exists(self, slug: str) -> bool:
+        """Проверяет, существует ли задача с заданным slug."""
+        stmt = select(Problem.id).filter(Problem.slug == slug)
+        result = await self.db.execute(stmt)
+        # Если найдена хотя бы одна запись, возвращаем True
+        return result.scalars().first() is not None
     async  def delete_problem(self, problem_id:uuid.UUID) -> Optional[uuid.UUID]:
 
         stmt = delete(Problem).where(Problem.id  == problem_id).returning(Problem.id)
 
         result = await  self.db.execute(stmt)
+        await self.db.commit()
         return result.scalars().first()
 
         if deleted_id:

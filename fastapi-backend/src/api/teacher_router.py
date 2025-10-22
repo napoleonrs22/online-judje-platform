@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import  Dict
 from ..database import get_db
-from ..schemas.schemas import ProblemCreate
+from ..schemas.schemas import ProblemCreate, ProblemUpdate
 from ..repository.problem_repository import ProblemRepository
 from  ..repository.submission_repository import  SubmissionRepository
 from ..services.problem_service import ProblemService
@@ -48,5 +48,16 @@ async def create_problem(
     db_problem = await problem_service.create_problem(problem_data, user_id)
 
     return {"message": "Задача успешно создана", "problem_id": db_problem.id, "slug": db_problem.slug}
+
+
+@teacher_router.put("/problems/{id}", status_code=status.HTTP_200_OK)
+async def update_problem_by_id(
+        id: int,
+        problem_data: ProblemUpdate,
+        services: Dict = Depends(get_services),
+):
+    problem_service = services["problem"]
+    db_problem = await problem_service.update_problem(id, problem_data)
+
 
 # 💡 ДОБАВЬТЕ сюда другие роуты для обновления, удаления и т.д., используя services["problem"]

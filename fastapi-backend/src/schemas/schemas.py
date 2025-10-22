@@ -25,6 +25,18 @@ class ProblemCreate(BaseModel):
     examples: List[ExampleCreate] = []
     test_cases: List[TestCaseCreate] = Field(..., min_items=1)
     is_public: bool = False
+
+class ProblemUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    time_limit: Optional[int] = None
+    memory_limit: Optional[int] = None
+    difficulty: Optional[DifficultyLevel] = None
+    checker_type: Optional[CheckerType] = None
+    is_public: Optional[bool] = None
+
+    class Config:
+        from_attributes = True
     
     
 class SubmissionCreate(BaseModel):

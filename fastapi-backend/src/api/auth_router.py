@@ -3,7 +3,7 @@ import uuid
 from ..services.auth_service import AuthService, get_auth_service
 from ..schemas.schemas import UserBase, UserCreate, LoginData, Token
 from fastapi.security import OAuth2PasswordRequestForm
-
+from ..models.user_models import  User
 
 auth_router = APIRouter(prefix="/api/auth", tags=["Аутентификация"])
 
@@ -82,3 +82,23 @@ async def logout_user(request: Request, response: Response, auth_service: AuthSe
                 await auth_service.update_refresh_token(user, None)
     response.delete_cookie("refresh_token")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@auth_router.get("/me", status_code=status.HTTP_200_OK)
+async def get_current_user(
+        current_user: User = Depends(get_auth_service.get_current_user)
+):
+    """
+    Получить информацию о текущем пользователе.
+
+    Требует валидный access_token в Authorization header.
+    """
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "username": current_user.username,
+        "full_name": current_user.full_name,
+        "role": current_user.role,
+        "rating": current_user.rating,
+        "created_at": current_user.created_at
+    }

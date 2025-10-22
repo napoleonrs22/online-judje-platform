@@ -4,13 +4,13 @@ from typing import List, Optional
 
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.testing.pickleable import User
+from ..models.user_models import User
 
 
 from ..repository.user_repository import UserRepository
 class AdminUSerService:
     def __init__(self, user_repository: UserRepository):
-        self.user = user_repository
+        self.user_repository = user_repository
 
     async def create_user_as_admin(self, email: str, username: str, password: str,
                                    role: str, full_name: str = None) -> User:

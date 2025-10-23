@@ -15,8 +15,8 @@ from ..schemas.schemas import UserCreate
 from ..database import get_db
 
 
-SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
+SECRET_KEY = "your-secret-key-change-in-production"  # ← Одинаковый везде
+ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))
 
@@ -186,8 +186,19 @@ async def get_current_teacher(current_user: User = Depends(get_current_user)) ->
 async def get_current_student(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != "student":
         raise HTTPException(
-            status=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Недостаточно прав,  Доступ разрещён только студентам."
 
+        )
+    return current_user
+
+async def get_current_student_or_teacher_or_admin(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Проверяет, является ли пользователь студентом, преподавателем или администратором."""
+    if current_user.role not in ["student", "teacher", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав. Доступ разрешён только студентам, преподавателям и администраторам."
         )
     return current_user

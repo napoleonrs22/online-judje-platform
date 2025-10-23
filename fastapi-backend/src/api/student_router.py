@@ -10,13 +10,16 @@ from ..repository.problem_repository import ProblemRepository
 from ..repository.submission_repository import SubmissionRepository
 from ..services.problem_service import ProblemService
 from ..services.submission_service import SubmissionService
-from ..services.auth_service import get_current_student
+from ..services.auth_service import get_current_student, get_current_student_or_teacher_or_admin
 from ..models.user_models import User
 
 student_router = APIRouter(prefix="/api/student", tags=["Функционал студента"])
 
 
-async def get_services(db: AsyncSession = Depends(get_db)) -> Dict:
+async def get_services(
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_student_or_teacher_or_admin),
+) -> Dict:
     problem_repo = ProblemRepository(db)
     submission_repo = SubmissionRepository(db)
     submission_service = SubmissionService(
@@ -29,6 +32,7 @@ async def get_services(db: AsyncSession = Depends(get_db)) -> Dict:
     return {
         "problem": problem_service,
         "submission": submission_service,
+        "current_user": current_user
     }
 
 
@@ -36,10 +40,9 @@ async def get_services(db: AsyncSession = Depends(get_db)) -> Dict:
 async def submit_solution(
         submission_data: SubmissionCreate,
         services: Dict = Depends(get_services),
-        current_user: User = Depends(get_current_student)  
 ):
     """Отправка решения студентом на проверку в Go-Executor."""
-
+    current_user = services["current_user"]
 
     response = await services["submission"].submit_solution(submission_data, user_id= current_user.id)
 
@@ -48,11 +51,10 @@ async def submit_solution(
 @student_router.get("/submissions", response_model=List[SubmissionResponse])
 async def list_user_submissions(
         services: Dict = Depends(get_services),
-        current_user: User = Depends(get_current_student),
         skip: int =0,
         limit: int =50
 ):
-
+    current_user = services["current_user"]
     submissions = await  services["submission"].get_user_submissions(
         user_id= current_user.id,
         skip=skip,
@@ -64,8 +66,8 @@ async def list_user_submissions(
 async def get_submission_status(
         submission_id: str,
         services: Dict = Depends(get_services),
-        current_user: User = Depends(get_current_student),
 ):
+    current_user = services["current_user"]
     response = await services["submission"].get_submission(submission_id)
 
     if response.submission_id != current_user.id:
@@ -77,8 +79,8 @@ async def get_submission_status(
 async def delete_pending_submission(
         submission_id: str,
         services: Dict = Depends(get_services),
-        current_user: User = Depends(get_current_student),
 ):
+    current_user = services["current_user"]
     response = await services["submission"].delete_submission(submission_id)
     return response
 

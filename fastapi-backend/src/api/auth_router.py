@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
 import uuid
-from ..services.auth_service import AuthService, get_auth_service
+from ..services.auth_service import AuthService, get_auth_service, get_current_user
 from ..schemas.schemas import UserBase, UserCreate, LoginData, Token
 from fastapi.security import OAuth2PasswordRequestForm
 from ..models.user_models import  User
@@ -86,7 +86,7 @@ async def logout_user(request: Request, response: Response, auth_service: AuthSe
 
 @auth_router.get("/me", status_code=status.HTTP_200_OK)
 async def get_current_user(
-        current_user: User = Depends(get_auth_service.get_current_user)
+        current_user: User = Depends(get_current_user),
 ):
     """
     Получить информацию о текущем пользователе.

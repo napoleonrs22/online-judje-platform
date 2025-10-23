@@ -4,7 +4,7 @@ import re
 import uuid
 from typing import List, Optional
 
-from ..schemas.schemas import ProblemCreate
+from ..schemas.schemas import ProblemCreate, ProblemUpdate
 from ..models.problem_models import Problem
 from ..models.base import DifficultyLevel
 from ..repository.problem_repository import ProblemRepository
@@ -70,13 +70,14 @@ class ProblemService:
         return await self.problem_repo.list_public_problems()
 
 
-    async  def get_problem_by_id(self, problem_id: int) -> Optional[Problem]:
+    async  def get_problem_by_ids(self, problem_id: uuid.UUID) -> Optional[Problem]:
 
         return await self.problem_repo.get_problem_by_id(problem_id)
 
-    async  def update_problem(self, problem_id:uuid.UUID, data: dict) -> Optional[Problem]:
-
+    async def update_problem(self, problem_id: uuid.UUID, problem_data: ProblemUpdate) -> Optional[Problem]:
+        data = problem_data.dict(exclude_unset=True)
         return await self.problem_repo.update_problem(problem_id, data)
+
 
     # async def get_problem_by_id(self, problem_id) -> Optional[Problem]: ...
     # async def update_problem(self, problem_id, data) -> Optional[Problem]: ...

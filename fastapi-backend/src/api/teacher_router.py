@@ -1,17 +1,16 @@
 # fastapi-backend/src/api/teacher_router.py
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import  Dict
 from ..database import get_db
-from ..schemas.schemas import ProblemCreate, ProblemUpdate
+from ..schemas.schemas import ProblemCreate, ProblemUpdate, ProblemId
 from ..repository.problem_repository import ProblemRepository
 from  ..repository.submission_repository import  SubmissionRepository
 from ..services.problem_service import ProblemService
 from  ..services.submission_service import SubmissionService
-
-
-import uuid
+from  uuid import UUID
 
 
 teacher_router = APIRouter(prefix="/api/teacher", tags=["Преподавательский функционал"])
@@ -50,14 +49,38 @@ async def create_problem(
     return {"message": "Задача успешно создана", "problem_id": db_problem.id, "slug": db_problem.slug}
 
 
+@teacher_router.get("/problems/{id}", status_code=status.HTTP_200_OK)
+async def get_problems_id(
+        problem_id: uuid.UUID,
+        services: Dict = Depends(get_services)
+):
+    problem_service = services["problem"]
+    db_problem = await problem_service.get_problem_by_ids(problem_id)
+    return {
+        "id": db_problem.id,
+        "title": db_problem.title,
+        "slug": db_problem.slug,
+        "difficulty": db_problem.difficulty,
+        "is_public": db_problem.is_public
+    }
+
+
+
+
 @teacher_router.put("/problems/{id}", status_code=status.HTTP_200_OK)
 async def update_problem_by_id(
-        id: int,
+        problem_id: UUID,
         problem_data: ProblemUpdate,
         services: Dict = Depends(get_services),
 ):
     problem_service = services["problem"]
-    db_problem = await problem_service.update_problem(id, problem_data)
+    db_problem = await problem_service.update_problem(problem_id, problem_data)
+
+    return {
+        "message": "Задача успешно обновлена",
+        "problem_id": str(db_problem.id),
+        "slug": db_problem.slug
+    }
 
 
 # 💡 ДОБАВЬТЕ сюда другие роуты для обновления, удаления и т.д., используя services["problem"]

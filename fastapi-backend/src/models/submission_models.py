@@ -20,5 +20,9 @@ class Submission(Base):
     error_message = Column(Text, nullable=True)
 
     test_results = Column(JSON, nullable=True)
-
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     submitted_at = Column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<Submission id={self.id} user_id={self.user_id}>, problem_id={self.problem_id}> status: {self.status}"

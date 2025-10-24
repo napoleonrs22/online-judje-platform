@@ -1,10 +1,10 @@
 # fastapi-backend/src/models/db_models.py
 
 from sqlalchemy import (
-    Column, String, Integer, Text, DateTime, ForeignKey, Enum, 
+    Column, String, Integer, Text, DateTime, ForeignKey, Enum,
     JSON, Boolean
 )
-from sqlalchemy.orm import relationship 
+from sqlalchemy.orm import relationship
 
 from datetime import datetime
 import enum
@@ -12,6 +12,7 @@ import uuid
 from sqlalchemy.dialects.postgresql import UUID
 
 from ..database import Base
+
 
 class DifficultyLevel(str, enum.Enum):
     EASY = "Легкий"

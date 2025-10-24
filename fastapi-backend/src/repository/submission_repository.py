@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, desc
 from typing import Optional, List
+from  uuid import UUID
 import uuid
 
 from ..models.submission_models import Submission
@@ -59,6 +60,23 @@ class SubmissionRepository:
             .offset(skip)
             .limit(limit)
             .order_by(Submission.id)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
+
+    async def get_problem_submissions(
+            self,
+            problem_id: UUID,
+            skip: int = 0,
+            limit: int = 50
+    ) -> List[Submission]:
+        """Получить все попытки решения конкретной задачи с пагинацией."""
+        stmt = (
+            select(Submission)
+            .where(Submission.problem_id == problem_id)
+            .order_by(desc(Submission.created_at))
+            .offset(skip)
+            .limit(limit)
         )
         result = await self.db.execute(stmt)
         return result.scalars().all()

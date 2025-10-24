@@ -56,7 +56,7 @@ class SubmissionService:
 
         db_submission = await self.submission_repository.create_submission(db_submission)
 
-        # ✅ Формируем тесты для отправки в Go
+
         test_case_inputs = [
             ExecutionTestInput(
                 id=str(test.id),
@@ -105,9 +105,15 @@ class SubmissionService:
 
         return SubmissionResponse(
             submission_id=db_submission.id,
+            user_id=db_submission.user_id,
+            problem_id=db_submission.problem_id,
+            created_at=db_submission.created_at,
+            language=db_submission.language,
             status=db_submission.status.value,
             final_status=db_submission.status.value,
             message=message,
+            execution_time=db_submission.execution_time,
+            memory_used=db_submission.memory_used,
         )
 
     async def delete_submission(self, submission_id: str) -> SubmissionResponse:
@@ -155,17 +161,19 @@ class SubmissionService:
             user_id, skip=skip, limit=limit
         )
 
-
         return [
             SubmissionResponse(
                 submission_id=sub.id,
+                user_id=sub.user_id,
+                problem_id=sub.problem_id,
+                created_at=sub.created_at,
+                language=sub.language,
                 status=sub.status.value,
                 final_status=sub.status.value,
                 message=sub.error_message or f"Статус: {sub.status.value}",
-                execution_time=None,
-                memory_used=None,
-                test_results=None,
-                score=None,
+                execution_time=sub.execution_time,
+                memory_used=sub.memory_used,
+                test_results=sub.test_results,
             )
             for sub in db_submissions
         ]

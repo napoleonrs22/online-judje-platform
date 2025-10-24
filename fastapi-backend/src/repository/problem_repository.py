@@ -2,13 +2,14 @@
 from unittest import result
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, func, or_
+from sqlalchemy import select, delete, func, or_, desc
 from sqlalchemy.orm import selectinload
 from typing import Optional, List
+from uuid import UUID
 import uuid
 
-from ..models.base import SubmissionStatus # Enum
-from ..models.problem_models import Problem, Example, TestCase # ORM-модели задач
+from ..models.base import SubmissionStatus
+from ..models.problem_models import Problem, Example, TestCase
 from ..models.submission_models import Submission
 
 
@@ -197,5 +198,3 @@ class ProblemRepository:
             'avg_time_ms': round(avg_time, 2) if avg_time else None,
             'avg_memory_mb': round(avg_memory, 2) if avg_memory else None,
         }
-
-

@@ -1,6 +1,3 @@
-
-# fastapi-backend/src/api/user_router.py
-
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import  Dict
@@ -11,6 +8,7 @@ from  ..repository.submission_repository import  SubmissionRepository
 from ..services.problem_service import ProblemService
 from  ..services.submission_service import SubmissionService
 from ..services.user_service import UserService
+from ..services.admin_service import AdminUserService
 from  ..repository.user_repository import UserRepository
 from ..core.security import  get_current_user, require_role
 from ..models.user_models import User
@@ -18,29 +16,25 @@ from typing import List, Optional
 import uuid
 
 
-users = APIRouter(prefix="/api/users", tags=["users"])
+router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
 
 async def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
     return UserRepository(db)
 
-async def get_user_service(user_repo: UserRepository = Depends(get_user_repository)) -> UserService:
-    return  UserService(user_repo)
+async def get_admin_user_service(repo: UserRepository = Depends(get_user_repository)) -> AdminUserService:
 
-# async def get_admin_user_service(repo: UserRepository = Depends(get_user_repository)) -> AdminUSerService:
-#
-#     return AdminUSerService(repo)
+    return AdminUserService(repo)
 
-@users.get("/{user_id}", response_model=UserResponse)
-async def get_current_user_profile(
-        user_id: uuid.UUID,
-        current_user: User = Depends(get_current_user),
-        service: UserService = Depends(get_user_service)
+
+@router.get("", response_model=list[UserResponse], dependencies=[Depends(require_role("ADMIN"))])
+async def list_all_users(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
+    role: str = Query(None),
+    service: AdminUserService = Depends(get_admin_user_service)
 ):
-    user = await service.get_user_by_id(user_id)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return user
-
-
+    """Получить список всех пользователей (только ADMIN)"""
+    users = await service.list_users(skip, limit, role)
+    return users

@@ -6,209 +6,347 @@
     <title>Online Judge Tester</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .auth-container { max-width: 400px; margin: 50px auto; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .card-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0; }
+        .btn-auth { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px; color: white; }
+        .btn-auth:hover { background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); color: white; }
+        .btn-logout { background: #dc3545; border: none; border-radius: 8px; color: white; }
+        .navbar-custom { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .app-container { display: none; }
+        .auth-forms { display: block; }
         .container { max-width: 1000px; }
-        .card-header { font-weight: bold; }
         textarea { font-family: 'Consolas', 'Courier New', monospace; }
-        #log { max-height: 400px; overflow-y: scroll; background: #343a40; color: #fff; }
+        #log { max-height: 300px; overflow-y: scroll; background: #343a40; color: #fff; border-radius: 10px; font-size: 12px; }
+        .nav-tabs .nav-link { color: #667eea; }
+        .nav-tabs .nav-link.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1 class="mb-4 text-center">Сервис Тестирования Online Judge (FastAPI + Go)</h1>
-        
-        <div id="log" class="p-3 mb-4 rounded">Логирование:</div>
+    <!-- Навбар -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container-fluid">
+            <span class="navbar-brand text-white">🎓 Online Judge</span>
+            <div class="d-flex align-items-center gap-3 ms-auto">
+                <span class="text-white" id="userInfo" style="display: none;">
+                    👤 <span id="currentUser"></span>
+                </span>
+                <button class="btn btn-logout" id="logoutBtn" style="display: none;" onclick="logout()">Выход</button>
+            </div>
+        </div>
+    </nav>
 
-        <div class="row">
-            
-            <div class="col-md-6 mb-4">
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white">
-                        1. Создать Задачу (POST /api/teacher/problems)
+    <!-- АВТОРИЗАЦИЯ -->
+    <div class="auth-forms" id="authForms">
+        <div class="auth-container">
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#register" data-bs-toggle="tab">Регистрация</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#login" data-bs-toggle="tab">Вход</a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- РЕГИСТРАЦИЯ -->
+                <div class="tab-pane fade show active" id="register">
+                    <div class="card mt-3">
+                        <div class="card-header">📝 Регистрация</div>
+                        <div class="card-body">
+                            <form id="registerForm">
+                                <div class="mb-3">
+                                    <input type="email" class="form-control" id="regEmail" placeholder="Email" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" class="form-control" id="regUsername" placeholder="Имя пользователя" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="password" class="form-control" id="regPassword" placeholder="Пароль (мин. 8)" required>
+                                </div>
+                                <div class="mb-3">
+                                    <select class="form-select" id="regRole">
+                                        <option value="student">Студент</option>
+                                        <option value="teacher">Преподаватель</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-auth w-100">Зарегистрироваться</button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <form id="createProblemForm">
-                            <div class="mb-3">
-                                <label for="problemTitle" class="form-label">Заголовок</label>
-                                <input type="text" class="form-control" id="problemTitle" value="Сумма двух чисел" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="problemDescription" class="form-label">Описание</label>
-                                <textarea class="form-control" id="problemDescription" rows="3" required>Напишите программу, которая считывает два целых числа и выводит их сумму.</textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="problemDifficulty" class="form-label">Сложность</label>
-                                <select class="form-select" id="problemDifficulty">
-                                    <option value="Легкий">Легкий</option>
-                                    <option value="Средний">Средний</option>
-                                    <option value="Сложный">Сложный</option>
-                                </select>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="isPublic" checked>
-                                <label class="form-check-label" for="isPublic">
-                                    Опубликовать задачу (is_public: true)
-                                </label>
-                            </div>
+                </div>
 
-                            <h5 class="mt-4">Тест-кейс (один тестовый пример)</h5>
-                            <div class="mb-3">
-                                <label for="testInput" class="form-label">Входные данные</label>
-                                <textarea class="form-control" id="testInput" rows="1">10 2</textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="testOutput" class="form-label">Ожидаемый вывод</label>
-                                <textarea class="form-control" id="testOutput" rows="1">12</textarea>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-primary w-100">Создать и Опубликовать</button>
-                        </form>
+                <!-- ВХОД -->
+                <div class="tab-pane fade" id="login">
+                    <div class="card mt-3">
+                        <div class="card-header">🔑 Вход</div>
+                        <div class="card-body">
+                            <form id="loginForm">
+                                <div class="mb-3">
+                                    <input type="email" class="form-control" id="loginEmail" placeholder="Email" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="password" class="form-control" id="loginPassword" placeholder="Пароль" required>
+                                </div>
+                                <button type="submit" class="btn btn-auth w-100">Войти</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-6 mb-4">
-                <div class="card shadow">
-                    <div class="card-header bg-success text-white">
-                        2. Отправить Решение (POST /api/student/submissions)
+            <div class="alert alert-info mt-4">
+                <strong>💡 Демо:</strong><br>
+                Email: <code>test@example.com</code><br>
+                Пароль: <code>password123</code><br>
+                Роль: <code>student</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- ПРИЛОЖЕНИЕ -->
+    <div class="app-container" id="appContainer">
+        <div class="container mt-5">
+            <h1 class="mb-4 text-center text-white">Сервис Тестирования Online Judge</h1>
+            
+            <div id="log" class="p-3 mb-4 rounded">Логирование:</div>
+
+            <div class="row">
+                <!-- СОЗДАНИЕ ЗАДАЧИ -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">1. Создать Задачу</div>
+                        <div class="card-body">
+                            <form id="createProblemForm">
+                                <input type="text" class="form-control mb-2" id="problemTitle" value="Сумма двух чисел" required>
+                                <textarea class="form-control mb-2" id="problemDescription" rows="2" required>Напишите программу, которая считывает два целых числа и выводит их сумму.</textarea>
+                                <select class="form-select mb-2" id="problemDifficulty">
+                                    <option value="easy">Легкий</option>
+                                    <option value="medium">Средний</option>
+                                    <option value="hard">Сложный</option>
+                                </select>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="isPublic" checked>
+                                    <label class="form-check-label">Опубликовать</label>
+                                </div>
+                                <small class="d-block mb-2">Тест-кейс:</small>
+                                <input type="text" class="form-control mb-2" id="testInput" value="10 2" placeholder="Input">
+                                <input type="text" class="form-control mb-2" id="testOutput" value="12" placeholder="Output">
+                                <button type="submit" class="btn btn-primary w-100">Создать</button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <form id="submitSolutionForm">
-                            <div class="mb-3">
-                                <label for="submissionProblemId" class="form-label">ID Задачи (Problem ID)</label>
-                                <input type="text" class="form-control" id="submissionProblemId" placeholder="Введите ID созданной задачи" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="submissionLanguage" class="form-label">Язык</label>
-                                <select class="form-select" id="submissionLanguage">
+                </div>
+
+                <!-- ОТПРАВКА РЕШЕНИЯ -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow">
+                        <div class="card-header bg-success text-white">2. Отправить Решение</div>
+                        <div class="card-body">
+                            <form id="submitSolutionForm">
+                                <input type="text" class="form-control mb-2" id="submissionProblemId" placeholder="ID задачи" required>
+                                <select class="form-select mb-2" id="submissionLanguage">
                                     <option value="python">Python</option>
                                     <option value="java">Java</option>
                                     <option value="cpp">C++</option>
-                                    <option value="javascript">JavaScript</option>
                                 </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="submissionCode" class="form-label">Код Решения (Python)</label>
-                                <textarea class="form-control" id="submissionCode" rows="10" required>import sys
-
-# Считываем два числа из одной строки
-try:
-    data = sys.stdin.read().split()
-    if len(data) >= 2:
-        a = int(data[0])
-        b = int(data[1])
-        # Для успешного прохождения заглушки Go-Executor'а
-        # код должен вывести '12' для тестовых данных '10 2'
-        print(a + b)
-    else:
-        print("Ошибка ввода")
-except:
-    print("Ошибка ввода/конвертации")
-</textarea>
-                            </div>
-                            <button type="submit" class="btn btn-success w-100">Отправить на Проверку</button>
-                        </form>
+                                <textarea class="form-control mb-2" id="submissionCode" rows="8" required>a, b = map(int, input().split())
+print(a + b)</textarea>
+                                <button type="submit" class="btn btn-success w-100">Отправить</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const API_BASE_URL = 'http://localhost:8000';
         const logElement = document.getElementById('log');
+        let accessToken = localStorage.getItem('accessToken') || null;
+        let currentUser = localStorage.getItem('currentUser') || null;
+        
+        // Mock users для локального тестирования
+        const mockUsers = {};
 
         function log(message, type = 'info') {
             const time = new Date().toLocaleTimeString();
             let color = 'white';
-            if (type === 'success') color = '#28a745'; // green
-            if (type === 'error') color = '#dc3545';   // red
-            if (type === 'warning') color = '#ffc107'; // yellow
+            if (type === 'success') color = '#28a745';
+            if (type === 'error') color = '#dc3545';
+            if (type === 'warning') color = '#ffc107';
             
             const p = document.createElement('p');
             p.innerHTML = `<span style="color: grey;">[${time}]</span> <span style="color: ${color};">${message}</span>`;
             logElement.prepend(p);
         }
 
-        // --- 1. Логика создания задачи ---
+        function showApp() {
+            document.getElementById('authForms').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            document.getElementById('userInfo').style.display = 'block';
+            document.getElementById('logoutBtn').style.display = 'block';
+            document.getElementById('currentUser').textContent = currentUser;
+        }
+
+        function hideApp() {
+            document.getElementById('authForms').style.display = 'block';
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+            accessToken = null;
+            currentUser = null;
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('currentUser');
+            log('Вы вышли', 'info');
+        }
+
+        function logout() {
+            hideApp();
+        }
+
+        // РЕГИСТРАЦИЯ
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('regEmail').value;
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+
+            log(`Регистрация: ${username}...`);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, username, password, role: document.getElementById('regRole').value })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    log(`✅ Регистрация успешна!`, 'success');
+                    mockUsers[email] = password;
+                    document.getElementById('loginEmail').value = email;
+                } else {
+                    log(`❌ ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Ошибка: ${error.message}`, 'error');
+            }
+        });
+
+        // ВХОД
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            log(`Вход: ${email}...`);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    accessToken = result.access_token;
+                    currentUser = email;
+                    localStorage.setItem('accessToken', accessToken);
+                    localStorage.setItem('currentUser', currentUser);
+                    log(`✅ Успешный вход!`, 'success');
+                    showApp();
+                } else {
+                    log(`❌ ${result.detail || 'Неверные данные'}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Ошибка: ${error.message}`, 'error');
+            }
+        });
+
+        // СОЗДАНИЕ ЗАДАЧИ
         document.getElementById('createProblemForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-
             const title = document.getElementById('problemTitle').value;
-            const difficulty = document.getElementById('problemDifficulty').value;
-            
-            const problemData = {
-                title: title,
-                description: document.getElementById('problemDescription').value,
-                difficulty: difficulty,
-                checker_type: "exact", // Фиксировано
-                examples: [],
-                test_cases: [
-                    {
-                        input_data: document.getElementById('testInput').value,
-                        output_data: document.getElementById('testOutput').value,
-                        is_sample: true 
-                    }
-                ],
-                is_public: document.getElementById('isPublic').checked
-            };
 
-            log(`Отправка запроса на создание задачи: ${title}...`);
+            log(`Создание задачи: ${title}...`);
 
             try {
                 const response = await fetch(`${API_BASE_URL}/api/teacher/problems`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(problemData)
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        title,
+                        slug: title.toLowerCase().replace(/\s+/g, '-'),
+                        description: document.getElementById('problemDescription').value,
+                        difficulty: document.getElementById('problemDifficulty').value,
+                        checker_type: "exact",
+                        examples: [],
+                        test_cases: [{
+                            input_data: document.getElementById('testInput').value,
+                            output_data: document.getElementById('testOutput').value,
+                            is_sample: true
+                        }],
+                        is_public: document.getElementById('isPublic').checked
+                    })
                 });
 
                 const result = await response.json();
-
                 if (response.ok) {
-                    log(`✅ Задача создана! ID: ${result.problem_id}. SLUG: ${result.slug}`, 'success');
-                    // Автоматически заполняем ID для отправки решения
+                    log(`✅ Задача создана! ID: ${result.problem_id}`, 'success');
                     document.getElementById('submissionProblemId').value = result.problem_id;
                 } else {
-                    log(`❌ Ошибка создания задачи (HTTP ${response.status}): ${result.detail || JSON.stringify(result)}`, 'error');
+                    log(`❌ ${result.detail}`, 'error');
                 }
             } catch (error) {
-                log(`🔥 Критическая ошибка: ${error.message}. Проверьте, запущен ли FastAPI на ${API_BASE_URL}.`, 'error');
+                log(`❌ Ошибка: ${error.message}`, 'error');
             }
         });
 
-
-        // --- 2. Логика отправки решения ---
+        // ОТПРАВКА РЕШЕНИЯ
         document.getElementById('submitSolutionForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const submissionProblemId = document.getElementById('submissionProblemId').value;
-            const submissionLanguage = document.getElementById('submissionLanguage').value;
-            
-            const submissionData = {
-                problem_id: submissionProblemId,
-                language: submissionLanguage,
-                code: document.getElementById('submissionCode').value,
-            };
-
-            log(`Отправка решения для ID ${submissionProblemId}...`);
+            log(`Отправка решения...`);
 
             try {
                 const response = await fetch(`${API_BASE_URL}/api/student/submissions`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(submissionData)
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        problem_id: document.getElementById('submissionProblemId').value,
+                        language: document.getElementById('submissionLanguage').value,
+                        code: document.getElementById('submissionCode').value
+                    })
                 });
 
                 const result = await response.json();
-
                 if (response.ok) {
                     const status = result.final_status || result.status;
-                    log(`🎉 Решение принято. Вердикт: ${status}. Сообщение: ${result.message}`, status === 'ACCEPTED' ? 'success' : status === 'WRONG_ANSWER' ? 'warning' : 'info');
+                    log(`✅ ${status}`, status === 'ACCEPTED' ? 'success' : 'warning');
                 } else {
-                    log(`❌ Ошибка отправки решения (HTTP ${response.status}): ${result.detail || JSON.stringify(result)}`, 'error');
+                    log(`❌ ${result.detail}`, 'error');
                 }
             } catch (error) {
-                log(`🔥 Критическая ошибка: ${error.message}. Проверьте, запущен ли FastAPI на ${API_BASE_URL}.`, 'error');
+                log(`❌ Ошибка: ${error.message}`, 'error');
+            }
+        });
+
+        // Восстановление сессии
+        window.addEventListener('load', () => {
+            if (accessToken && currentUser) {
+                showApp();
+                log(`Восстановлена сессия: ${currentUser}`, 'info');
             }
         });
     </script>

@@ -32,6 +32,12 @@ async def get_user_service(user_repo: UserRepository = Depends(get_user_reposito
 #
 #     return AdminUSerService(repo)
 
+@users.get("/me", response_model=UserResponse)
+async def get_current_user_profile(
+        current_user: User = Depends(get_current_user)
+):
+    return current_user
+
 @users.get("/{user_id}", response_model=UserResponse)
 async def get_current_user_profile(
         user_id: uuid.UUID,
@@ -44,3 +50,33 @@ async def get_current_user_profile(
     return user
 
 
+@users.put("/me", response_model=UserResponse)
+async def update_current_user(
+        data: UpdateUserRequest,
+        current_user: User = Depends(get_current_user),
+        service: UserService = Depends(get_user_service)
+):
+    """Обновить свой профиль"""
+    if data.email and data.email != current_user.email:
+        if not service.validate_email(data.email):
+            raise HTTPException(status_code=400, detail="Некорректный email")
+        existing = await service.get_user_by_email(data.email)
+        if existing:
+            raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
+
+    updated_user = await service.update_user(current_user.id, data)
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return updated_user
+
+@users.get("/username/{username}", response_model=UserResponse)
+async def get_user_by_username(
+    username: str,
+    service: UserService = Depends(get_user_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Получить профиль пользователя по username"""
+    user = await service.get_user_by_username(username)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return user

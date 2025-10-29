@@ -49,7 +49,13 @@ class UserService:
     def validate_password(password: str) -> bool:
         return len(password) >= 8
 
+    @staticmethod
+    def hash_password(password: str) -> str:
+        return pwd_context.hash(password)
 
+    @staticmethod
+    def verify_password(password: str, hashed_password: str) -> bool:
+        return  pwd_context.verify(password, hashed_password)
     # это еще я буду переделать под группы пока это затычка
     async def list_users(self, skip: int = 0, limit: int = 100, role: Optional[str] = None) -> List[User]:
         users = await self.user_repository.list_users(skip, limit)

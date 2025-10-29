@@ -23,6 +23,7 @@ pycparser==2.23
 pydantic==2.12.1
 pydantic_core==2.41.3
 python-dotenv==1.1.1
+pydantic_settings==2.10
 python-jose==3.5.0
 PyYAML==6.0.3
 rsa==4.9.1

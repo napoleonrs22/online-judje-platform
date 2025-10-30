@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import  Dict
+from typing import Dict, Literal
 from ..database import get_db
 from ..schemas.user_schemas import  UserResponse, CreateUserRequest, UpdateUserRequest
 from ..repository.problem_repository import ProblemRepository
@@ -38,3 +38,55 @@ async def list_all_users(
     """Получить список всех пользователей (только ADMIN)"""
     users = await service.list_users(skip, limit, role)
     return users
+
+@router.post("", response_model=UserResponse, dependencies=[Depends(require_role("ADMIN"))])
+async def create_user_admin(
+        data: CreateUserRequest,
+        service: AdminUserService = Depends(get_admin_user_service)
+):
+    try:
+        user = await service.create_user_as_admin(data)
+        return user
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/{user_id}", response_model= UserResponse, dependencies=[Depends(require_role("ADMIN"))])
+
+async def update_user_admin(
+        user_id: uuid.UUID,
+        data: UpdateUserRequest,
+        service: AdminUserService = Depends(get_admin_user_service)
+):
+    try:
+        user = await service.update_user_as_admin(user_id, data)
+        return user
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/{user_id}", dependencies=[Depends(require_role("ADMIN"))])
+async def delete_user_admin(
+        user_id: uuid.UUID,
+        service: AdminUserService = Depends(get_admin_user_service)
+):
+    try:
+        await service.delete_user_as_admin(user_id)
+        return {"message": "Пользователь удален"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{user_id}/role", response_model=UserResponse, dependencies=[Depends(require_role("ADMIN"))])
+async  def change_user_role(
+        user_id: uuid.UUID,
+        new_role: Literal["STUDENT", "TEACHER", "ADMIN"] = Query(...),
+        service: AdminUserService = Depends(get_admin_user_service)
+):
+    try:
+        updated_user = await service.change_user_role(user_id, new_role)
+        if not updated_user:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        return updated_user
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

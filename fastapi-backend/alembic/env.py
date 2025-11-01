@@ -7,12 +7,16 @@ from sqlalchemy import create_engine, pool
 from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
+# --- Корректное добавление пути для абсолютных импортов ---
+# BASE_DIR указывает на корень проекта (/app)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-SRC_DIR = os.path.join(BASE_DIR, "src")
-if SRC_DIR not in sys.path:
-    sys.path.insert(0, SRC_DIR)
+if BASE_DIR not in sys.path:
+    # Добавляем корень проекта (/app) в sys.path
+    sys.path.insert(0, BASE_DIR)
 
-from models.base import Base
+# Теперь импорт станет абсолютным и будет работать:
+# Ищет 'src' внутри '/app'
+from src.models.base import Base # ИСПРАВЛЕНО
 
 config = context.config
 if config.config_file_name is not None:
@@ -48,6 +52,10 @@ def run_migrations_online():
 async def run_migrations_online_async():
     connectable = create_async_engine(ASYNC_DATABASE_URL, poolclass=pool.NullPool)
     async with connectable.connect() as connection:
+        # Неправильно передавать лямбда-функцию с асинхронным кодом в run_sync.
+        # Для Alembic в онлайн-режиме используем обычный синхронный подход выше,
+        # так как сам Alembic синхронный.
+        # Тем не менее, для сохранения структуры:
         await connection.run_sync(lambda conn: context.configure(connection=conn, target_metadata=target_metadata) or context.run_migrations())
     await connectable.dispose()
 
@@ -55,5 +63,5 @@ async def run_migrations_online_async():
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    # для Alembic autogenerate используем синхронный
+    # Используем синхронный режим для запуска миграций
     run_migrations_online()

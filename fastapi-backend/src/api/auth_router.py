@@ -27,8 +27,8 @@ async def login_user(response: Response, login_data: LoginData, auth_service: Au
     user = await auth_service.get_user_by_email(login_data.email)
     if not user or not auth_service.verify_password(login_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Неправильный email или пароль")
-    access_token = auth_service.create_access_token(user.id)
-    refresh_token = auth_service.create_refresh_token(user.id)
+    access_token = auth_service.create_access_token(user)
+    refresh_token = auth_service.create_refresh_token(user)
     await auth_service.update_refresh_token(user, refresh_token)
     set_refresh_cookie(response, refresh_token)
     return Token(access_token=access_token)
@@ -45,8 +45,8 @@ async def login_user_form(
     if not user or not auth_service.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Неправильный email или пароль")
 
-    access_token = auth_service.create_access_token(user.id)
-    refresh_token = auth_service.create_refresh_token(user.id)
+    access_token = auth_service.create_access_token(user)
+    refresh_token = auth_service.create_refresh_token(user)
     await auth_service.update_refresh_token(user, refresh_token)
 
     set_refresh_cookie(response, refresh_token)
@@ -64,8 +64,8 @@ async def refresh_token(request: Request, response: Response, auth_service: Auth
     user = await auth_service.get_user_by_id(uuid.UUID(payload["user_id"]))
     if not user or not auth_service.verify_password(refresh_token, user.refresh_token_hash):
         raise HTTPException(status_code=401, detail="Refresh token отозван")
-    new_access_token = auth_service.create_access_token(user.id)
-    new_refresh_token = auth_service.create_refresh_token(user.id)
+    new_access_token = auth_service.create_access_token(user)
+    new_refresh_token = auth_service.create_refresh_token(user)
     await auth_service.update_refresh_token(user, new_refresh_token)
     set_refresh_cookie(response, new_refresh_token)
     return Token(access_token=new_access_token)

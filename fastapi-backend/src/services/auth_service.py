@@ -22,7 +22,6 @@ class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    # === Хэширование ===
     def get_password_hash(self, password: str) -> str:
         if not isinstance(password, str):
             password = str(password)
@@ -57,20 +56,25 @@ class AuthService:
         encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         return encoded_jwt
 
-    def create_access_token(self, user_id: uuid.UUID) -> str:
+    def create_access_token(self, user: User) -> str:
+        """Создание access токена, включающего роль пользователя."""
         expire = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        return self.create_jwt_token(
-            {"user_id": str(user_id), "token_type": "access"},
-            expires_delta=expire
-        )
+        payload = {
+            "user_id": str(user.id),
+            "token_type": "access",
+            "role": user.role.value if hasattr(user.role, "value") else user.role,
+        }
+        return self.create_jwt_token(payload, expires_delta=expire)
 
-    def create_refresh_token(self, user_id: uuid.UUID) -> str:
-
+    def create_refresh_token(self, user: User) -> str:
+        """Создание refresh токена."""
         expire = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-        return self.create_jwt_token(
-            {"user_id": str(user_id), "token_type": "refresh"},
-            expires_delta=expire
-        )
+        payload = {
+            "user_id": str(user.id),
+            "token_type": "refresh",
+            "role": user.role.value if hasattr(user.role, "value") else user.role,
+        }
+        return self.create_jwt_token(payload, expires_delta=expire)
 
     def decode_jwt_token(self, token: str) -> Optional[dict]:
         try:
@@ -168,7 +172,8 @@ async def get_current_user(
 
 async def get_current_teacher(current_user: User = Depends(get_current_user)) -> User:
     """Проверяет, является ли пользователь преподавателем или администратором."""
-    if current_user.role not in ["teacher", "admin"]:
+    role = current_user.role.lower() if isinstance(current_user.role, str) else current_user.role
+    if role not in ["teacher", "admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Недостаточно прав. Требуется роль Преподавателя или Администратора."
@@ -187,10 +192,13 @@ async def get_current_student(current_user: User = Depends(get_current_user)) ->
 
 
 async def get_current_student_or_teacher_or_admin(
-    current_user: User = Depends(get_current_user)
+        current_user: User = Depends(get_current_user)
 ) -> User:
     """Проверяет, является ли пользователь студентом, преподавателем или администратором."""
-    if current_user.role not in ["student", "teacher", "admin"]:
+
+    role_value = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
+
+    if str(role_value).lower() not in ["student", "teacher", "admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Недостаточно прав. Доступ разрешён только студентам, преподавателям и администраторам."

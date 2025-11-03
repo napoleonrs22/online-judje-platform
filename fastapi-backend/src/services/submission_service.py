@@ -69,12 +69,23 @@ class SubmissionService:
         go_payload = {
             "submission_id": str(db_submission.id),
             "language": submission_data.language,
-            "code": submission_data.code,
-            "tests": test_case_inputs,
+            "code": submission_data.code.replace("\\n", "\n"),
+            "time_limit": problem_with_tests.time_limit,
+            "memory_limit": problem_with_tests.memory_limit,
+            "checker_type":problem_with_tests.checker_type.value,
+            "test_cases": test_case_inputs,
         }
 
         message = ""
         final_status = SubmissionStatus.INTERNAL_ERROR
+        status_map = {
+            "ACCEPTED": SubmissionStatus.ACCEPTED,
+            "WRONG_ANSWER": SubmissionStatus.WRONG_ANSWER,
+            "TIME_LIMIT": SubmissionStatus.TIME_LIMIT,
+            "RUNTIME_ERROR": SubmissionStatus.RUNTIME_ERROR,
+            "COMPILE_ERROR": SubmissionStatus.COMPILE_ERROR,
+            "INTERNAL_ERROR": SubmissionStatus.INTERNAL_ERROR,
+        }
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -83,12 +94,14 @@ class SubmissionService:
 
                 judge_result = ExecutionResponseGo.parse_obj(response.json())
 
-                db_submission.status = SubmissionStatus(judge_result.final_status)
+                # Безопасно: если статус неизвестен → INTERNAL_ERROR
+                db_submission.status = status_map.get(
+                    judge_result.final_status,
+                    SubmissionStatus.INTERNAL_ERROR
+                )
                 db_submission.execution_time = judge_result.max_time_ms
                 db_submission.memory_used = judge_result.max_memory_mb
-                db_submission.test_results = [
-                    res.dict() for res in judge_result.test_results
-                ]
+                db_submission.test_results = [res.dict() for res in judge_result.test_results]
                 db_submission.error_message = judge_result.error_message
 
                 final_status = db_submission.status
@@ -96,8 +109,10 @@ class SubmissionService:
 
         except httpx.ConnectError:
             message = f"Ошибка: Go-Executor недоступен по адресу {CODE_EXECUTION_URL}"
+            final_status = SubmissionStatus.INTERNAL_ERROR
         except Exception as e:
             message = f"Критическая ошибка при проверке: {type(e).__name__}: {str(e)}"
+            final_status = SubmissionStatus.INTERNAL_ERROR
 
         db_submission.status = final_status
         db_submission.error_message = message

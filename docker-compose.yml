@@ -1,5 +1,12 @@
-
 services:
+
+  images-init:
+    image: docker:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./init-images.sh:/init-images.sh
+    command: sh /init-images.sh
+    restart: "no"
 
   db:
     image: postgres:14-alpine
@@ -33,6 +40,9 @@ services:
     environment:
       JUDGER_SHARED_DIR: ${JUDGER_SHARED_DIR}
       DOCKER_HOST: unix:///var/run/docker.sock
+    depends_on:
+      images-init:
+        condition: service_completed_successfully
     restart: always
 
   api:

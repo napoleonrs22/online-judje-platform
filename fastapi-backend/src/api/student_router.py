@@ -68,11 +68,8 @@ async def get_submission_status(
         services: Dict = Depends(get_services),
 ):
     current_user = services["current_user"]
-    response = await services["submission"].get_submission(submission_id)
+    return await services["submission"].get_submission(submission_id, current_user.id)
 
-    if response.submission_id != current_user.id:
-        pass
-    return response
 
 
 @student_router.delete("/submissions/{submission_id}", response_model=SubmissionResponse)

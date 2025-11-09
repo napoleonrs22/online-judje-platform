@@ -1,6 +1,6 @@
 # fastapi-backend/src/schemas/schemas.py
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
 from typing import List, Literal, Optional
 from datetime import datetime
 import uuid
@@ -14,15 +14,14 @@ SUPPORTED_LANGUAGES = Literal["python", "java", "cpp", "javascript"]
 
 class UserBase(BaseModel):
     """Базовая схема пользователя."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     username: str
     email: EmailStr
     role: str
     full_name: Optional[str] = None
     rating: int
-
-    class Config:
-        orm_mode = True
 
 
 class UserCreate(BaseModel):
@@ -57,15 +56,14 @@ class TestCaseCreate(BaseModel):
 
 class TestCaseResponse(BaseModel):
     """Ответ с тестовым случаем."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     problem_id: uuid.UUID
     input_data: str
     output_data: str
     is_sample: bool
     order_index: int
-
-    class Config:
-        orm_mode = True
 
 
 class ExampleCreate(BaseModel):
@@ -77,28 +75,26 @@ class ExampleCreate(BaseModel):
 
 class ExampleResponse(BaseModel):
     """Ответ с примером."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     problem_id: uuid.UUID
     input_data: str
     output_data: str
     explanation: Optional[str] = None
 
-    class Config:
-        orm_mode = True
-
 
 # ============ PROBLEM SCHEMAS ============
 
 class ProblemBase(BaseModel):
     """Базовая схема для отображения задачи в списке."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     title: str
     slug: str
     difficulty: DifficultyLevel
     is_public: bool
-
-    class Config:
-        orm_mode = True
 
 
 class ProblemCreate(BaseModel):
@@ -124,9 +120,6 @@ class ProblemUpdate(BaseModel):
     checker_type: Optional[CheckerType] = None
     is_public: Optional[bool] = None
 
-    class Config:
-        from_attributes = True
-
 
 class ProblemResponse(ProblemBase):
     """Полный ответ о задаче."""
@@ -135,9 +128,6 @@ class ProblemResponse(ProblemBase):
     updated_at: Optional[datetime] = None
     examples: List[ExampleResponse] = []
     test_cases: List[TestCaseResponse] = []
-
-    class Config:
-        orm_mode = True
 
 
 # ============ SUBMISSION SCHEMAS ============
@@ -150,6 +140,9 @@ class SubmissionCreate(BaseModel):
 
 
 class SubmissionResponse(BaseModel):
+    """Ответ с информацией о попытке решения."""
+    model_config = ConfigDict(from_attributes=True)
+
     submission_id: uuid.UUID
     user_id: Optional[uuid.UUID] = None
     problem_id: Optional[uuid.UUID] = None
@@ -161,8 +154,6 @@ class SubmissionResponse(BaseModel):
     execution_time: Optional[float] = None
     memory_used: Optional[float] = None
 
-    class Config:
-        orm_mode = True
 
 # ============ GO-EXECUTOR SCHEMAS ============
 

@@ -7,16 +7,11 @@ from sqlalchemy import create_engine, pool
 from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
-# --- Корректное добавление пути для абсолютных импортов ---
-# BASE_DIR указывает на корень проекта (/app)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BASE_DIR not in sys.path:
-    # Добавляем корень проекта (/app) в sys.path
     sys.path.insert(0, BASE_DIR)
 
-# Теперь импорт станет абсолютным и будет работать:
-# Ищет 'src' внутри '/app'
-from src.models.base import Base # ИСПРАВЛЕНО
+from src.models.base import Base
 
 config = context.config
 if config.config_file_name is not None:
@@ -63,5 +58,4 @@ async def run_migrations_online_async():
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    # Используем синхронный режим для запуска миграций
     run_migrations_online()

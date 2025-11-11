@@ -23,10 +23,10 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # --- Синхронный URL для autogenerate ---
-SYNC_DATABASE_URL = "postgresql+psycopg2://olympiad_user:olympiad_pass@db:5432/olympiad_db"
+SYNC_DATABASE_URL = "postgresql+psycopg2://olympiad_user:olympiad_pass@db:5432/olympiad_user"
 
 # --- Async URL для online миграций в runtime ---
-ASYNC_DATABASE_URL = "postgresql+asyncpg://olympiad_user:olympiad_pass@db:5432/olympiad_db"
+ASYNC_DATABASE_URL = "postgresql+asyncpg://olympiad_user:olympiad_pass@db:5432/olympiad_user"
 
 target_metadata = Base.metadata
 

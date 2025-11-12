@@ -2,7 +2,8 @@
 
 from .base import Base, Column, UUID, String, Integer, Text, DateTime, ForeignKey, Enum, relationship, datetime, uuid, Boolean
 from .base import DifficultyLevel, CheckerType
-
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import  text
 
 class Problem(Base):
     __tablename__ = "problems"
@@ -22,6 +23,11 @@ class Problem(Base):
     is_public = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    assigned_student_ids = Column(
+        ARRAY(UUID(as_uuid=True)),
+        nullable=False,
+        server_default=text("'{}'")
+    )
     author = relationship("User", back_populates="problems") 
     examples = relationship("Example", back_populates="problem")
     test_cases = relationship("TestCase", back_populates="problem")

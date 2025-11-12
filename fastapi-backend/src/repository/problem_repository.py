@@ -198,3 +198,26 @@ class ProblemRepository:
             'avg_time_ms': round(avg_time, 2) if avg_time else None,
             'avg_memory_mb': round(avg_memory, 2) if avg_memory else None,
         }
+
+    async def list_available_problems(self, user_id: uuid.UUID, skip: int = 0, limit: int  = 50) -> List[Problem]:
+        stmt = select(Problem).where(
+            or_(Problem.is_public == True,
+                Problem.assigned_student_ids.contains([user_id]))
+        ).order_by(Problem.created_at.desc()).offset(skip).limit(limit)
+
+        result = await self.db.execute(stmt)
+
+        return result.scalars().all()
+
+    async def get_problem_by_id_for_student(self, problem_id: UUID, user_id: UUID) -> Optional[Problem]:
+        """Получить задачу, если она доступна студенту."""
+        stmt = select(Problem).where(
+            Problem.id == problem_id,
+            or_(
+                Problem.is_public == True,
+                Problem.assigned_student_ids.contains([user_id])
+            )
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
+

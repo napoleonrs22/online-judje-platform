@@ -68,7 +68,10 @@ class SubmissionService:
             "submission_id": str(db_submission.id),
             "language": submission_data.language,
             "code": submission_data.code,
-            "tests": test_case_inputs,
+            "time_limit": problem_with_tests.time_limit or 2000,
+            "memory_limit": problem_with_tests.memory_limit or 256,
+            "checker_type": problem_with_tests.checker_type.value,
+            "test_cases": test_case_inputs,
         }
 
         message = ""
@@ -104,7 +107,19 @@ class SubmissionService:
         db_submission.error_message = message
         db_submission = await self.submission_repository.update_submission(db_submission)
 
-        return SubmissionResponse.model_validate(db_submission)
+        return SubmissionResponse(
+            submission_id=db_submission.id,
+            user_id=db_submission.user_id,
+            problem_id=db_submission.problem_id,
+            status=db_submission.status.value,
+            message=db_submission.error_message or f"Вердикт: {db_submission.status.value}",
+            final_status=db_submission.status.value,
+            created_at=db_submission.created_at,
+            language=db_submission.language,
+            execution_time=db_submission.execution_time,
+            memory_used=db_submission.memory_used,
+            test_results=db_submission.test_results or [],
+        )
 
     async def delete_submission(self, submission_id: str, user_id: uuid.UUID) -> dict:
         """Удалить submission (только PENDING)."""
@@ -158,7 +173,22 @@ class SubmissionService:
             user_id, skip=skip, limit=limit
         )
 
-        return [SubmissionResponse.model_validate(sub) for sub in db_submissions]
+        return [
+            SubmissionResponse(
+                submission_id=sub.id,
+                user_id=sub.user_id,
+                problem_id=sub.problem_id,
+                status=sub.status.value,
+                message=sub.error_message or f"Статус: {sub.status.value}",
+                final_status=sub.status.value,
+                created_at=sub.created_at,
+                language=sub.language,
+                execution_time=sub.execution_time,
+                memory_used=sub.memory_used,
+                test_results=sub.test_results or [],
+            )
+            for sub in db_submissions
+        ]
 
     async def get_submission(self, submission_id: str, user_id: uuid.UUID) -> SubmissionResponse:
         """Получить информацию о submission."""
@@ -188,4 +218,16 @@ class SubmissionService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Вы не можете просмотреть чужой submission",
             )
-        return SubmissionResponse.model_validate(db_submission)
+        return SubmissionResponse(
+            submission_id=db_submission.id,
+            user_id=db_submission.user_id,
+            problem_id=db_submission.problem_id,
+            status=db_submission.status.value,
+            message=db_submission.error_message or f"Статус: {db_submission.status.value}",
+            final_status=db_submission.status.value,
+            created_at=db_submission.created_at,
+            language=db_submission.language,
+            execution_time=db_submission.execution_time,
+            memory_used=db_submission.memory_used,
+            test_results=db_submission.test_results or [],
+        )

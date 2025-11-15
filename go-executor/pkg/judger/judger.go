@@ -56,7 +56,7 @@ func getLanguageConfig(language string) (string, string, error) {
 	case "cpp":
 		return "gcc:latest", "sh -c \"g++ -o solution user_code.cpp -O2 -static && ./solution < input.txt\"", nil
 	case "java":
-		return "openjdk:17-alpine", "sh -c \"javac Solution.java && java Solution < input.txt\"", nil
+		return "eclipse-temurin:17-jdk-alpine", "sh -c \"javac Solution.java && java Solution < input.txt\"", nil
 	case "javascript":
 		return "node:18-alpine", "node user_code.js < input.txt", nil
 	default:
@@ -266,7 +266,7 @@ func (j *dockerJudger) executeInContainer(ctx context.Context, req models.Judger
 	// ← ИСПРАВЛЕНИЕ: Для C++/Java увеличиваем timeout (компиляция требует времени)
 	timeout := req.TimeLimit
 	if req.Language == "cpp" || req.Language == "java" {
-		timeout = req.TimeLimit * 2  // В 2 раза больше для компиляции
+		timeout = req.TimeLimit * 3  // В 2 раза больше для компиляции
 		log.Printf("⏰ [DEBUG] C++/Java - увеличенный timeout: %dms", timeout)
 	}
 

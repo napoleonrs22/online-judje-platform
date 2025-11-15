@@ -15,7 +15,6 @@ if BASE_DIR not in sys.path:
 
 # --- ПРАВИЛЬНЫЙ ИМПОРТ Base ИЗ database.py ---
 from src.database import Base
-
 # --- ИМПОРТИРУЕМ ВСЕ МОДЕЛИ (они должны быть загружены ДО Alembic) ---
 from src.models.user_models import User
 from src.models.problem_models import Problem, TestCase, Example

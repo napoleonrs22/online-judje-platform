@@ -1,4 +1,4 @@
-# fastapi-backend/src/models/db_models.py
+# fastapi-backend/src/models/base.py
 
 from sqlalchemy import (
     Column, String, Integer, Text, DateTime, ForeignKey, Enum,

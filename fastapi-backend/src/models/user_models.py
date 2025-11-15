@@ -3,7 +3,7 @@ from enum import Enum
 from .base import (
     Base, Column, UUID, String, Integer, DateTime, relationship, datetime, uuid
 )
-
+from sqlalchemy import Boolean
 
 class Role(str, Enum):
     STUDENT = "student"
@@ -38,6 +38,8 @@ class User(Base):
     )
 
     refresh_token_hash: str | None = Column(String, nullable=True)
+
+    is_active: bool = Column(Boolean, default=True, nullable=False, server_default="true")
 
     # --- Связи ---
     problems = relationship("Problem", back_populates="author", cascade="all, delete-orphan")

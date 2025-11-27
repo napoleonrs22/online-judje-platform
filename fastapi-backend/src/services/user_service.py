@@ -3,6 +3,7 @@ import re
 import uuid
 from typing import List, Optional
 
+from fastapi import HTTPException
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from watchfiles import awatch
@@ -20,7 +21,12 @@ class UserService:
         self.user_repository = user_repository
 
     async  def get_user_by_id(self, user_id: uuid.UUID) -> Optional[User]:
-        return await self.user_repository.get_user_by_id(user_id)
+        try:
+            return await self.user_repository.get_user_by_id(user_id)
+        except HTTPException:
+            return None
+
+        # return await self.user_repository.get_user_by_id(user_id)
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
         return  await self.user_repository.get_user_by_email(email)

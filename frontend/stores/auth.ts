@@ -1,6 +1,7 @@
 // stores/auth.ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { computed } from 'vue'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>('')
@@ -8,7 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref<boolean>(false)
   const error = ref<string>('')
 
-  const isLoggedIn = () => !!token.value
+  const isLoggedIn = computed(() => !!token.value)
   const isStudent = () => user.value?.role === 'student'
   const isTeacher = () => user.value?.role === 'teacher'
 

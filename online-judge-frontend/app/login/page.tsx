@@ -7,6 +7,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { login, AuthError } from '@/lib/auth';
 
+import styles from './Login.module.css';
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -64,15 +66,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className={styles.auth}>
       {/* ЛЕВАЯ ЧАСТЬ — ФОРМА */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 px-4 py-12">
-        <form onSubmit={handleSubmit} className="w-96 h-72 relative">
+      <div className={styles.auth_left}>
+        <form onSubmit={handleSubmit} className={styles.login_form}>
           {/* Основной контейнер */}
-          <div className="w-96 h-72 absolute inset-0 bg-zinc-100 rounded-lg shadow-[0px_2px_4px_0px_rgba(0,0,0,0.25)]" />
+
 
           {/* Заголовок */}
-          <div className="absolute left-5 top-4 text-stone-950 text-2xl font-semibold">
+          <div className={styles.login_form__title}>
             Авторизация в аккаунт
           </div>
 
@@ -90,8 +92,10 @@ export default function LoginPage() {
             </div>
           )}
 
+          <div className={styles.form_input}>
+
           {/* Введите логин - Label */}
-          <div className="absolute left-5 top-[65px] text-neutral-600 text-base font-normal">
+          <div className={styles.form_input__label}>
             Введите электронную почту
           </div>
           {/* Введите логин - Input */}
@@ -99,13 +103,16 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-96 h-7 absolute left-5 top-[88px] bg-neutral-200 rounded-lg border-2 border-zinc-300 px-2 focus:outline-none text-stone-950"
+            className={styles.form_input__input}
             disabled={isLoading}
             required
           />
 
+          </div>
+
+          <div className={styles.form_input}>
           {/* Введите пароль - Label */}
-          <div className="absolute left-5 top-[138px] text-neutral-600 text-base font-normal">
+          <div className={styles.form_input__label}>
             Введите пароль
           </div>
           {/* Введите пароль - Input */}
@@ -113,10 +120,11 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-96 h-7 absolute left-5 top-[161px] bg-neutral-200 rounded-lg border-2 border-zinc-300 px-2 focus:outline-none text-stone-950"
+            className={styles.form_input__input}
             disabled={isLoading}
             required
           />
+          </div>
 
           {/* Ссылки */}
           <div className="absolute left-5 top-[199px] text-xs font-normal flex gap-2">
@@ -142,12 +150,12 @@ export default function LoginPage() {
       </div>
 
       {/* ПРАВАЯ ЧАСТЬ — ФОТО */}
-      <div className="hidden lg:flex w-1/2 relative bg-gray-900 overflow-hidden">
+      <div className={styles.auth_right}>
         <Image
           src="/login.png"
           alt="Программист за ноутбуком"
           fill
-          className="object-cover"
+          className={styles.auth_right_img}
           priority
         />
       </div>

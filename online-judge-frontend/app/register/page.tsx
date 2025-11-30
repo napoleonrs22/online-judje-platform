@@ -91,17 +91,17 @@ export default function RegisterPage() {
             <div className="space-y-4">
               {/* Выбор роли */}
               <div>
-                <label className="block text-base text-neutral-600 mb-2">
+                <label className="block text-base text-neutral-600 mb-1 ">
                   Выберите роль
                 </label>
-                <div className="flex gap-2">
+                <div className="flex  border-2 border-[#d9d9d9] rounded-lg bg-neutral-200">
                   <button
                     type="button"
                     onClick={() => setRole('student')}
-                    className={`flex-1 px-4 py-2 rounded-md text-base font-normal transition ${
+                    className={`flex-1 px-4 text-base font-normal rounded-lg transition ${
                       role === 'student'
-                        ? 'bg-white text-black border-2 border-zinc-300'
-                        : 'bg-neutral-200 text-black border-2 border-zinc-300'
+                        ? 'bg-white text-black '
+                        : 'bg-neutral-200 text-black'
                     }`}
                   >
                     Студент
@@ -109,10 +109,10 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setRole('teacher')}
-                    className={`flex-1 px-4 py-2 rounded-md text-base font-normal transition ${
+                    className={`flex-1 px-4  text-base font-normal rounded-lg transition ${
                       role === 'teacher'
-                        ? 'bg-white text-black border-2 border-zinc-300'
-                        : 'bg-neutral-200 text-black border-2 border-zinc-300'
+                        ? 'bg-white text-black '
+                        : 'bg-neutral-200 text-black '
                     }`}
                   >
                     Преподаватель
@@ -129,7 +129,7 @@ export default function RegisterPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full h-7 px-2 bg-neutral-200 rounded-lg border-2 border-zinc-300 text-stone-950 focus:outline-none"
+                  className="w-full h-8 px-2 bg-neutral-200 rounded-lg border-2 border-zinc-300 text-stone-950 focus:outline-none"
                   required
                 />
               </div>
@@ -143,7 +143,7 @@ export default function RegisterPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full h-7 px-2 bg-neutral-200 rounded-lg border-2 border-zinc-300 text-stone-950 focus:outline-none"
+                  className="w-full h-8 px-2 bg-neutral-200 rounded-lg border-2 border-zinc-300 text-stone-950 focus:outline-none"
                   required
                 />
               </div>
@@ -157,7 +157,7 @@ export default function RegisterPage() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full h-7 px-2 bg-neutral-200 rounded-lg border-2 border-zinc-300 text-stone-950 focus:outline-none"
+                  className="w-full h-8 px-2 bg-neutral-200 rounded-lg border-2 border-zinc-300 text-stone-950 focus:outline-none"
                   required
                 />
               </div>
@@ -171,7 +171,7 @@ export default function RegisterPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-7 px-2 bg-neutral-200 rounded-lg border-2 border-zinc-300 text-stone-950 focus:outline-none"
+                  className="w-full h-8 px-2 bg-neutral-200 rounded-lg border-2 border-zinc-300 text-stone-950 focus:outline-none"
                   required
                 />
               </div>
@@ -185,20 +185,18 @@ export default function RegisterPage() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full h-7 px-2 bg-neutral-200 rounded-lg border-2 border-zinc-300 text-stone-950 focus:outline-none"
+                  className="w-full h-8 px-2 bg-neutral-200 rounded-lg border-2 border-zinc-300 text-stone-950 focus:outline-none"
                   required
                 />
               </div>
 
               {/* Ссылки */}
-              <div className="flex items-center justify-between text-xs text-neutral-600 pt-2">
-                <Link href="/forgot-password" className="hover:text-stone-950">
-                  Забыли пароль?
-                </Link>
+              <div className="flex items-center justify-end text-xs text-neutral-600 pt-2">
+               
                 <span>•</span>
-                <span>Нет аккаунта?</span>
-                <Link href="/login" className="text-indigo-900 hover:text-indigo-950 font-semibold">
-                  Зарегистрироваться
+                <span>Уже есть аккаунт?</span>
+                <Link href="/login" className="text-indigo-900 hover:text-indigo-950 font-semibold pl-2">
+                  Авторизоваться
                 </Link>
               </div>
 
@@ -208,7 +206,7 @@ export default function RegisterPage() {
                 disabled={isLoading}
                 className="w-full h-8 mt-2 bg-blue-900 hover:bg-blue-950 disabled:bg-blue-400 text-zinc-100 text-base font-semibold rounded-lg transition-all"
               >
-                {isLoading ? 'Загрузка...' : 'Вход'}
+                {isLoading ? 'Загрузка...' : 'Регистрация'}
               </button>
             </div>
           </div>

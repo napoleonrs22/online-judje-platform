@@ -1,4 +1,4 @@
-// lib/auth.ts
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 export interface RegisterData {
@@ -39,9 +39,7 @@ export class AuthError extends Error {
   }
 }
 
-/**
- * Регистрация пользователя
- */
+
 export async function register(data: RegisterData): Promise<AuthResponse> {
   try {
     const payload = {
@@ -84,9 +82,7 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
   }
 }
 
-/**
- * Вход пользователя
- */
+
 export async function login(data: LoginData): Promise<TokenResponse> {
   try {
     const payload = {

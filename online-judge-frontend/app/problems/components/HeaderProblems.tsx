@@ -45,14 +45,14 @@ export default function HeaderProblems() {
              className="cursor-pointer"
           />
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Image 
              width={30}
              height={30}
              alt="search icon"
              src={"/Frame (9).svg"}
              className="cursor-pointer"
-          />
+            />
 
           <p className="text-black font-normal">Danila</p>
             <Image 

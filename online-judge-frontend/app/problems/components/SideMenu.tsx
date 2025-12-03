@@ -43,9 +43,9 @@ export default function SideMenu() {
                 </div>
               </button>
 
-              {/* Плавное раскрытие через max-h */}
+
               <div className={`overflow-hidden transition-all duration-300 ${isOpen ? "max-h-40 mt-2" : "max-h-0"}`}>
-                {/* Внутренний контейнер — для translateY + opacity */}
+                
                 <div className={`ml-10 flex flex-col gap-2 transform transition-all duration-300 ${isOpen ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}>
                   {block.items.map((it, idx) => (
                     <a key={idx} className="text-sm text-[#4d4d4d] cursor-pointer hover:underline">

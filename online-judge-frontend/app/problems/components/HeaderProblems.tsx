@@ -1,6 +1,6 @@
 import Image from "next/image"
 
-export default function HeaderProbems() { 
+export default function HeaderProblems() {
   return (
     <>
       <header className="w-full bg-[#F2F2F2] px-5 py-4 justify-between flex items-center">

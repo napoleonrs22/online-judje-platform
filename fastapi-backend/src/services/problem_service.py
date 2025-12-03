@@ -78,6 +78,16 @@ class ProblemService:
         data = problem_data.dict(exclude_unset=True)
         return await self.problem_repo.update_problem(problem_id, data)
 
+    async def get_problem_details_for_student(self, problem_id: str, user_id: uuid.UUID) -> Problem:
+        """Получение деталей задачи для студента."""
+        try:
+            p_uuid = uuid.UUID(problem_id)
+        except ValueError:
+            # Если ID невалидный UUID
+            return None
+
+        problem = await self.problem_repo.get_problem_by_id_for_student(p_uuid, user_id)
+        return problem
 
     # async def get_problem_by_id(self, problem_id) -> Optional[Problem]: ...
     # async def update_problem(self, problem_id, data) -> Optional[Problem]: ...

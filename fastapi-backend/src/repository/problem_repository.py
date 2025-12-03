@@ -210,12 +210,18 @@ class ProblemRepository:
         return result.scalars().all()
 
     async def get_problem_by_id_for_student(self, problem_id: UUID, user_id: UUID) -> Optional[Problem]:
-        """Получить задачу, если она доступна студенту."""
-        stmt = select(Problem).where(
-            Problem.id == problem_id,
-            or_(
-                Problem.is_public == True,
-                Problem.assigned_student_ids.contains([user_id])
+        stmt = (
+            select(Problem)
+            .where(
+                Problem.id == problem_id,
+                or_(
+                    Problem.is_public == True,
+                    Problem.assigned_student_ids.contains([user_id])
+                )
+            )
+            .options(
+                selectinload(Problem.examples),
+                selectinload(Problem.test_cases)
             )
         )
         result = await self.db.execute(stmt)

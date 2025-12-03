@@ -1,25 +1,25 @@
-import HeaderProbems from "./components/HeaderProblems"
-import MainProblems from "./components/MainProblems"
-import SideMenu from "./components/SideMenu"
+'use client';
 
+// Импорты компонентов из папки components, которая лежит рядом
+import MainProblems from "./components/MainProblems";
+import HeaderProblems from "./components/HeaderProblems";
+import SideMenu from "./components/SideMenu";
 
-// bg-[#E6E6E6]
-
-
-export default function ProblemsPage() { 
+export default function ProblemsListPage() {
   return (
-    <>
-    <div >
-
-   
+    <div className="flex h-screen overflow-hidden bg-white">
+      {/* Боковое меню */}
       <SideMenu />
-      <div className="flex flex-col ml-64">
 
-    
-       <HeaderProbems />
-      <MainProblems /> 
+      {/* Основная контентная область */}
+      <div className="flex-1 flex flex-col ml-64 min-w-0">
+        <HeaderProblems />
+
+        {/* Список задач */}
+        <div className="flex-1 overflow-y-auto">
+            <MainProblems />
         </div>
-       </div>
-    </>
-   )
+      </div>
+    </div>
+  );
 }

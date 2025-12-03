@@ -124,6 +124,7 @@ class ProblemUpdate(BaseModel):
 class ProblemResponse(ProblemBase):
     """Полный ответ о задаче."""
     user_id: uuid.UUID
+    description:str
     created_at: datetime
     updated_at: Optional[datetime] = None
     examples: List[ExampleResponse] = []

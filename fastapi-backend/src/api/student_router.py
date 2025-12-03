@@ -1,17 +1,17 @@
 # fastapi-backend/src/api/student_router.py
-
 from typing import List, Dict
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 from ..database import get_db
-from ..schemas.schemas import SubmissionCreate, SubmissionResponse, ProblemBase
+from ..schemas.schemas import SubmissionCreate, SubmissionResponse, ProblemBase, ProblemResponse
 from ..repository.problem_repository import ProblemRepository
 from ..repository.submission_repository import SubmissionRepository
 from ..services.problem_service import ProblemService
 from ..services.submission_service import SubmissionService
 from ..services.auth_service import get_current_student, get_current_student_or_teacher_or_admin
 from ..models.user_models import User
+from fastapi import HTTPException
 
 student_router = APIRouter(prefix="/api/student", tags=["Функционал студента"])
 
@@ -90,3 +90,23 @@ async def list_problems(
     problems = await services["problem"].problem_repo.list_public_problems()
 
     return problems
+
+
+@student_router.get("/problems/{problem_id}", response_model=ProblemResponse)
+async def get_problem_details(
+        problem_id: str,
+        services: Dict = Depends(get_services),
+):
+    """Получить одну задачу по ID."""
+    current_user = services["current_user"]
+    problem_service = services["problem"]
+
+    problem = await problem_service.get_problem_details_for_student(problem_id, current_user.id)
+
+    if not problem:
+        raise  HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Задача не найдена или доступ запрещен"
+        )
+
+    return problem

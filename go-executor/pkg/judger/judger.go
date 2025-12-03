@@ -87,7 +87,22 @@ func fixJavaClassName(code string) string {
 }
 
 func sanitizeOutput(output string) string {
-	return strings.TrimSpace(output)
+    // Заменяем все виды переносов на \n
+    cleaned := strings.ReplaceAll(output, "\r\n", "\n")
+    cleaned = strings.ReplaceAll(cleaned, "\r", "\n")
+
+    // Разбиваем на строки и убираем пустые/пробельные
+    lines := strings.Split(cleaned, "\n")
+    var result []string
+    for _, line := range lines {
+        trimmed := strings.TrimSpace(line)
+        if trimmed != "" {
+            result = append(result, trimmed)
+        }
+    }
+
+    // Собираем обратно через \n (для multi-line вывода)
+    return strings.Join(result, "\n")
 }
 
 func (j *dockerJudger) getContainerOutput(ctx context.Context, containerID string) (stdout, stderr string, err error) {

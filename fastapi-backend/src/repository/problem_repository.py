@@ -87,19 +87,38 @@ class ProblemRepository:
         result = await self.db.execute(stmt)
         # Если найдена хотя бы одна запись, возвращаем True
         return result.scalars().first() is not None
-    async  def delete_problem(self, problem_id:uuid.UUID) -> Optional[uuid.UUID]:
 
-        stmt = delete(Problem).where(Problem.id  == problem_id).returning(Problem.id)
+    async def delete_problem(self, problem_id: uuid.UUID) -> Optional[uuid.UUID]:
+        """Удаляет задачу и ВСЕ связанные данные (каскадное удаление).
 
-        result = await  self.db.execute(stmt)
+        Порядок удаления:
+        1. Submissions (ссылаются на problems)
+        2. TestCases (ссылаются на problems)
+        3. Examples (ссылаются на problems)
+        4. Problem (родительская таблица)
+        """
+
+        # 1. Удаляем все submissions для этой задачи
+        await self.db.execute(
+            delete(Submission).where(Submission.problem_id == problem_id)
+        )
+
+        # 2. Удаляем все test cases для этой задачи
+        await self.db.execute(
+            delete(TestCase).where(TestCase.problem_id == problem_id)
+        )
+
+        # 3. Удаляем все examples для этой задачи
+        await self.db.execute(
+            delete(Example).where(Example.problem_id == problem_id)
+        )
+
+        # 4. Наконец удаляем саму задачу (теперь безопасно!)
+        stmt = delete(Problem).where(Problem.id == problem_id).returning(Problem.id)
+        result = await self.db.execute(stmt)
         await self.db.commit()
+
         return result.scalars().first()
-
-        if deleted_id:
-            await self.db.close()
-            return deleted_id
-
-        return None
 
 
 

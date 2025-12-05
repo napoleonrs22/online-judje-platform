@@ -1,6 +1,6 @@
 import Image from "next/image"
 
-export default function HeaderProbems() { 
+export default function HeaderProblems() {
   return (
     <>
       <header className="w-full bg-[#F2F2F2] px-5 py-4 justify-between flex items-center">
@@ -45,14 +45,14 @@ export default function HeaderProbems() {
              className="cursor-pointer"
           />
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Image 
              width={30}
              height={30}
              alt="search icon"
              src={"/Frame (9).svg"}
              className="cursor-pointer"
-          />
+            />
 
           <p className="text-black font-normal">Danila</p>
             <Image 

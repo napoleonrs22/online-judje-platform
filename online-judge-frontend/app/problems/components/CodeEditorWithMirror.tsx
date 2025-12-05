@@ -1,82 +1,56 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
-import { EditorView, basicSetup } from 'codemirror';
-import { EditorState } from '@codemirror/state';
-
+import React from 'react';
+import CodeMirror from '@uiw/react-codemirror';
 import { python } from '@codemirror/lang-python';
 import { javascript } from '@codemirror/lang-javascript';
 import { cpp } from '@codemirror/lang-cpp';
 import { java } from '@codemirror/lang-java';
+import { githubLight, githubDark } from '@uiw/codemirror-theme-github';
+// import { oneDark } from '@uiw/codemirror-theme-onedark';
 
-import { oneDark } from '@codemirror/theme-one-dark';
-
-import { lineNumbers, highlightActiveLine } from "@codemirror/view";
 
 interface CodeEditorProps {
   code: string;
-  onChange: (code: string) => void;
+  onChange: (value: string) => void;
   language: 'python' | 'cpp' | 'java' | 'javascript';
+  theme?: 'light' | 'dark';
 }
 
-export default function CodeEditorWithMirror({ code, onChange, language }: CodeEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<EditorView | null>(null);
-  const [mounted, setMounted] = useState(false);
+const languageMap = {
+  python: python(),
+  javascript: javascript({ jsx: true, typescript: true }),
+  cpp: cpp(),
+  java: java(),
+};
 
-  const getLanguageExtension = (lang: string) => {
-    switch (lang) {
-      case 'python': return python();
-      case 'cpp': return cpp();
-      case 'java': return java();
-      case 'javascript': return javascript();
-      default: return python();
-    }
-  };
+export default function CodeEditorWithMirror({
+  code,
+  onChange,
+  language,
+  theme = 'light',
+}: CodeEditorProps) {
+  const extensions = [languageMap[language]];
 
-  useEffect(() => setMounted(true), []);
 
-  useEffect(() => {
-    if (!mounted || !editorRef.current) return;
-
-    if (viewRef.current) viewRef.current.destroy();
-
-    const state = EditorState.create({
-      doc: code,
-      extensions: [
-        basicSetup,
-        getLanguageExtension(language),
-        oneDark,
-        lineNumbers(),
-        highlightActiveLine(),
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
-            onChange(update.state.doc.toString());
-          }
-        }),
-        EditorView.theme({
-          "&": { height: "100%", fontSize: "14px" },
-          ".cm-scroller": { overflow: "auto" },
-        }),
-      ],
-    });
-
-    const view = new EditorView({
-      state,
-      parent: editorRef.current,
-    });
-
-    viewRef.current = view;
-
-    return () => view.destroy();
-  }, [language, mounted, onChange]);
-
-  if (!mounted) return <div className="w-full h-full bg-[#1e1e1e]" />;
 
   return (
-    <div
-      ref={editorRef}
-      className="w-full h-full overflow-hidden bg-[#1e1e1e]"
+    <CodeMirror
+      value={code}
+      height="100%"
+      theme={theme === 'dark' ? githubDark : githubLight}
+      extensions={extensions}
+      onChange={(value) => onChange(value)}
+      basicSetup={{
+        lineNumbers: true,
+        highlightActiveLineGutter: true,
+        highlightActiveLine: true,
+        bracketMatching: true,
+        indentOnInput: true,
+        tabSize: 4,
+      }}
+      indentWithTab={true}
+      style={{ fontSize: '14px' }}
     />
   );
 }

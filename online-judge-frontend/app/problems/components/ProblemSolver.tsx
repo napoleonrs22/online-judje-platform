@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Maximize2, RotateCcw, ChevronDown, Send } from 'lucide-react';
+import { Settings, ChevronDown, Send } from 'lucide-react';
 import CodeEditorWithMirror from './CodeEditorWithMirror';
 import ProblemDescription from './ProblemDescription';
 import SubmissionStatus from './SubmissionStatus';
@@ -35,10 +35,10 @@ export default function ProblemSolver({ problem }: { problem: Problem }) {
   useEffect(() => {
     const fnName = problem.slug ? problem.slug.replace(/-/g, '_') : 'solve';
     const templates: Record<string, string> = {
-      python: `def ${fnName}(nums, target):\n    # Write your code here\n    pass`,
-      javascript: `/**\n * @param {number[]} nums\n * @param {number} target\n * @return {number[]}\n */\nvar ${fnName} = function(nums, target) {\n    \n};`,
-      java: `class Solution {\n    public int[] ${fnName}(int[] nums, int target) {\n        \n    }\n}`,
-      cpp: `class Solution {\npublic:\n    vector<int> ${fnName}(vector<int>& nums, int target) {\n        \n    }\n};`
+      python: `# Решите задачу "${problem.title}"\n\ndef ${fnName}():\n    # Напишите ваш код здесь\n    pass\n`,
+      javascript: `/**\n * ${problem.title}\n */\nfunction ${fnName}() {\n    // Ваш код здесь\n}\n`,
+      java: `public class Solution {\n    public static void main(String[] args) {\n        // Ваш код здесь\n    }\n}`,
+      cpp: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    // Ваш код здесь\n    return 0;\n}`
     };
     setCode(templates[language] || '');
   }, [language, problem.slug]);
@@ -66,7 +66,7 @@ export default function ProblemSolver({ problem }: { problem: Problem }) {
       setSubmission(result);
       setActiveTab('submissions');
     } catch (err: any) {
-      setError(err.message || 'Ошибка сервера');
+      setError(err.message || 'Ошибка при отправке решения');
       setActiveTab('submissions');
     } finally {
       setIsLoading(false);
@@ -75,91 +75,99 @@ export default function ProblemSolver({ problem }: { problem: Problem }) {
 
   return (
     <div
-      className="h-[calc(100vh-64px)] w-full flex flex-col bg-gray-100 select-none"
+      className="h-[calc(100vh-64px)] w-full flex flex-col bg-gray-50 select-none"
       onMouseMove={handleMouseMove}
       onMouseUp={() => setIsDragging(false)}
       onMouseLeave={() => setIsDragging(false)}
     >
       <div id="split-container" className="flex-1 flex overflow-hidden">
 
-        {/* ЛЕВАЯ ПАНЕЛЬ (СВЕТЛАЯ) */}
-        <div style={{ width: `${splitRatio}%` }} className="bg-[#FDFDFD] flex flex-col border-r border-gray-200">
-          <div className="flex bg-[#F2F2F2] border-b border-[#E0E0E0]">
+        {/* ЛЕВАЯ ПАНЕЛЬ — Описание */}
+        <div style={{ width: `${splitRatio}%` }} className="bg-white flex flex-col border-r border-gray-200">
+          <div className="flex bg-gray-50 border-b border-gray-200">
             <button
               onClick={() => setActiveTab('description')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'description' ? 'bg-[#FDFDFD] border-t-2 border-t-blue-500 text-black' : 'text-gray-500 hover:text-gray-700'
+              className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === 'description'
+                  ? 'border-blue-600 text-blue-600 bg-white'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
               Описание
             </button>
             <button
               onClick={() => setActiveTab('submissions')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'submissions' ? 'bg-[#FDFDFD] border-t-2 border-t-blue-500 text-black' : 'text-gray-500 hover:text-gray-700'
+              className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === 'submissions'
+                  ? 'border-blue-600 text-blue-600 bg-white'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Решения
+              Мои решения
             </button>
           </div>
-          <div className="flex-1 overflow-hidden relative">
+          <div className="flex-1 overflow-y-auto bg-white">
             {activeTab === 'description' && <ProblemDescription problem={problem} />}
             {activeTab === 'submissions' && <SubmissionStatus submission={submission} error={error} />}
           </div>
         </div>
 
-        {/* РАЗДЕЛИТЕЛЬ */}
+        {/* Разделитель */}
         <div
-          className="w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize z-20 transition-colors"
+          className="w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize transition-colors z-10"
           onMouseDown={() => setIsDragging(true)}
         />
 
-        {/* ПРАВАЯ ПАНЕЛЬ (ТЕМНАЯ) */}
-        <div style={{ width: `${100 - splitRatio}%` }} className="bg-[#1e1e1e] flex flex-col text-white">
+        {/* ПРАВАЯ ПАНЕЛЬ — Светлый редактор */}
+        <div style={{ width: `${100 - splitRatio}%` }} className="bg-white flex flex-col">
 
-          {/* Header редактора */}
-          <div className="h-10 border-b border-[#333] flex items-center justify-between px-3 bg-[#F2F2F2]">
-            <div className="relative group">
-               <div className="bg-white border border-gray-300 rounded px-2 py-1 flex items-center gap-1 cursor-pointer hover:bg-gray-50">
-                 <select
-                   value={language}
-                   onChange={(e) => setLanguage(e.target.value as any)}
-                   className="appearance-none bg-transparent text-black text-sm font-medium focus:outline-none cursor-pointer pr-4"
-                 >
-                   <option value="python">Python</option>
-                   <option value="javascript">JavaScript</option>
-                   <option value="java">Java</option>
-                   <option value="cpp">C++</option>
-                 </select>
-                 <ChevronDown className="w-3 h-3 text-black pointer-events-none absolute right-2"/>
-               </div>
+          {/* Header редактора — светлый */}
+          <div className="h-12 border-b border-gray-200 flex items-center justify-between px-4 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as any)}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="java">Java</option>
+                <option value="cpp">C++</option>
+              </select>
             </div>
-            <div className="flex items-center gap-3 text-gray-500">
-               <Settings className="w-4 h-4 cursor-pointer hover:text-black" />
-            </div>
+
+            <button className="p-2 hover:bg-gray-200 rounded transition">
+              <Settings className="w-5 h-5 text-gray-600" />
+            </button>
           </div>
 
-          {/* CodeMirror Редактор */}
-          <div className="flex-1 overflow-hidden relative bg-[#1e1e1e]">
+          {/* Редактор — СВЕТЛАЯ ТЕМА */}
+          <div className="flex-1 bg-white">
             <CodeEditorWithMirror
               code={code}
               onChange={setCode}
               language={language}
+              theme="light"  // ← ВАЖНО: передаём светлую тему
             />
           </div>
 
-          {/* Footer (Кнопка отправки) */}
-          <div className="h-16 border-t border-[#333] bg-[#F2F2F2] px-4 flex items-center justify-end gap-3">
-             <button
-               onClick={handleSubmit}
-               disabled={isLoading}
-               className="px-6 py-2 rounded-md bg-[#0033A0] text-white text-sm font-semibold hover:bg-[#002270] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-             >
-               {isLoading ? 'Отправка...' : 'Отправить решение'}
-               {!isLoading && <Send className="w-4 h-4" />}
-             </button>
+          {/* Футер с кнопкой */}
+          <div className="h-16 border-t border-gray-200 bg-gray-50 px-6 flex items-center justify-end">
+            <button
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="px-8 py-3 rounded-lg bg-blue-900 text-white font-semibold text-sm hover:bg-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+            >
+              {isLoading ? (
+                <>Отправка...</>
+              ) : (
+                <>
+                  Отправить решение
+                  <Send className="w-4 h-4" />
+                </>
+              )}
+            </button>
           </div>
-
         </div>
       </div>
     </div>

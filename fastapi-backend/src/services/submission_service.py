@@ -12,7 +12,6 @@ from ..schemas.schemas import (
     ExecutionTestInput,
 
 )
-from ..models.submission_models import Submission
 from ..models.problem_models import Problem
 from ..models.base import SubmissionStatus
 from ..repository.problem_repository import ProblemRepository

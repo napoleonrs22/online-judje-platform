@@ -12,7 +12,9 @@ from ..services.problem_service import ProblemService
 from  ..services.submission_service import SubmissionService
 from ..services.user_service import UserService
 from  ..repository.user_repository import UserRepository
-from ..core.security import  get_current_user, require_role
+from ..services.auth_service import get_current_user
+from ..core.security import require_roles
+
 from ..models.user_models import User
 from typing import List, Optional
 import uuid

@@ -2,7 +2,6 @@
 from typing import List, Dict
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-import uuid
 from ..database import get_db
 from ..schemas.schemas import SubmissionCreate, SubmissionResponse, ProblemBase, ProblemResponse
 from ..repository.problem_repository import ProblemRepository

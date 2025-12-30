@@ -1,199 +1,330 @@
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
-from sqlalchemy.ext.asyncio import AsyncSession
+# core/security.py
+"""
+Единый модуль безопасности и авторизации.
+Содержит все функции для работы с JWT токенами и проверки ролей.
+"""
+
+import hashlib
+import secrets
+import logging
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Union, List
+from enum import Enum
 from uuid import UUID
-from typing import List, Union
-from pydantic_settings import BaseSettings
 
-from ..database import get_db
-from ..repository.user_repository import UserRepository
-from ..models.user_models import User
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from .config import settings
 
+# Настройка логирования
+logger = logging.getLogger(__name__)
 
+# Контекст для хэширования паролей
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-class Settings(BaseSettings):
-    SECRET_KEY: str
-    ALGORITHM: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
-    REFRESH_TOKEN_EXPIRE_DAYS: int
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
-
-
-settings = Settings()
-security = HTTPBearer()
+# OAuth2 схема для Swagger UI
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/api/auth/login-form",
+    scheme_name="JWT",
+    auto_error=True
+)
 
 
+class Role(str, Enum):
+    """Роли пользователей в системе."""
+    STUDENT = "student"
+    TEACHER = "teacher"
+    ADMIN = "admin"
+
+    @classmethod
+    def from_string(cls, value: str) -> "Role":
+        """Преобразует строку в Role с нормализацией."""
+        normalized = value.strip().lower()
+        try:
+            return cls(normalized)
+        except ValueError:
+            raise ValueError(f"Недопустимая роль: {value}. Допустимые: {[r.value for r in cls]}")
 
 
-def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
+class PasswordService:
+    """Сервис для работы с паролями."""
+
+    @staticmethod
+    def hash_password(password: str) -> str:
+        """
+        Хэширует пароль с использованием bcrypt.
+        bcrypt имеет ограничение в 72 байта.
+        """
+        password_bytes = password.encode("utf-8")[:72]
+        return pwd_context.hash(password_bytes.decode("utf-8", errors="ignore"))
+
+    @staticmethod
+    def verify_password(plain_password: str, hashed_password: str) -> bool:
+        """Проверяет пароль против хэша."""
+        if not hashed_password:
+            return False
+        plain_bytes = plain_password.encode("utf-8")[:72]
+        try:
+            return pwd_context.verify(plain_bytes, hashed_password)
+        except Exception as e:
+            logger.warning(f"Ошибка верификации пароля: {e}")
+            return False
+
+    @staticmethod
+    def hash_refresh_token(token: str) -> str:
+        """
+        Создаёт безопасный хэш для refresh токена.
+        Используем SHA256 + bcrypt для дополнительной безопасности.
+        """
+        sha256_hash = hashlib.sha256(token.encode()).hexdigest()
+        return pwd_context.hash(sha256_hash)
+
+    @staticmethod
+    def verify_refresh_token(token: str, hashed_token: str) -> bool:
+        """Проверяет refresh токен против хэша."""
+        if not hashed_token:
+            return False
+        sha256_hash = hashlib.sha256(token.encode()).hexdigest()
+        try:
+            return pwd_context.verify(sha256_hash, hashed_token)
+        except Exception as e:
+            logger.warning(f"Ошибка верификации refresh токена: {e}")
+            return False
+
+
+class TokenService:
+    """Сервис для работы с JWT токенами."""
+
+    @staticmethod
+    def create_access_token(
+            user_id: UUID,
+            role: Union[Role, str],
+            additional_claims: Optional[dict] = None
+    ) -> str:
+        """
+        Создаёт access токен.
+
+        Args:
+            user_id: UUID пользователя
+            role: Роль пользователя
+            additional_claims: Дополнительные данные для токена
+
+        Returns:
+            JWT access токен
+        """
+        role_value = role.value if isinstance(role, Role) else str(role).lower()
+
+        now = datetime.now(timezone.utc)
+        expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
+        payload = {
+            "sub": str(user_id),
+            "user_id": str(user_id),  # Для обратной совместимости
+            "role": role_value,
+            "token_type": "access",
+            "jti": secrets.token_hex(16),  # Уникальный ID токена
+            "iat": now,
+            "exp": expire,
+        }
+
+        if additional_claims:
+            payload.update(additional_claims)
+
+        return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+    @staticmethod
+    def create_refresh_token(user_id: UUID, role: Union[Role, str]) -> str:
+        """
+        Создаёт refresh токен.
+
+        Args:
+            user_id: UUID пользователя
+            role: Роль пользователя
+
+        Returns:
+            JWT refresh токен
+        """
+        role_value = role.value if isinstance(role, Role) else str(role).lower()
+
+        now = datetime.now(timezone.utc)
+        expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+        payload = {
+            "sub": str(user_id),
+            "user_id": str(user_id),
+            "role": role_value,
+            "token_type": "refresh",
+            "jti": secrets.token_hex(16),
+            "iat": now,
+            "exp": expire,
+        }
+
+        return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+    @staticmethod
+    def decode_token(token: str) -> Optional[dict]:
+        """
+        Декодирует JWT токен.
+
+        Args:
+            token: JWT токен
+
+        Returns:
+            Payload токена или None при ошибке
+        """
+        try:
+            payload = jwt.decode(
+                token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            return payload
+        except JWTError as e:
+            logger.debug(f"JWT decode error: {e}")
+            return None
+
+    @staticmethod
+    def verify_access_token(token: str) -> Optional[dict]:
+        """
+        Верифицирует access токен.
+
+        Returns:
+            Payload если токен валиден и является access токеном, иначе None
+        """
+        payload = TokenService.decode_token(token)
+        if payload and payload.get("token_type") == "access":
+            return payload
+        return None
+
+    @staticmethod
+    def verify_refresh_token(token: str) -> Optional[dict]:
+        """
+        Верифицирует refresh токен.
+
+        Returns:
+            Payload если токен валиден и является refresh токеном, иначе None
+        """
+        payload = TokenService.decode_token(token)
+        if payload and payload.get("token_type") == "refresh":
+            return payload
+        return None
+
+
+# === ЗАВИСИМОСТИ (Dependencies) ===
+
+async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> UUID:
     """
-    Создать JWT access token.
-
-    Args:
-        data: Данные для кодирования (например, {"sub": user_id})
-        expires_delta: Время жизни токена
-
-    Returns:
-        JWT токен (строка)
+    Извлекает ID пользователя из access токена.
+    Используется как базовая зависимость.
     """
-    to_encode = data.copy()
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Недействительный токен авторизации",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload = TokenService.verify_access_token(token)
 
-    to_encode.update({"exp": expire, "token_type": "access"})
+    if not payload:
+        logger.warning("Попытка доступа с невалидным access токеном")
+        raise credentials_exception
 
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    return encoded_jwt
-
-
-def create_refresh_token(data: dict) -> str:
-    """
-    Создать JWT refresh token.
-
-    Args:
-        data: Данные для кодирования (например, {"sub": user_id})
-
-    Returns:
-        JWT токен (строка)
-    """
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-
-    to_encode.update({"exp": expire, "token_type": "refresh"})
-
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    return encoded_jwt
-
-
-async def get_current_user(
-        credentials: HTTPAuthorizationCredentials = Depends(security),
-        db: AsyncSession = Depends(get_db)
-) -> User:
-    token = credentials.credentials
+    user_id_str = payload.get("sub") or payload.get("user_id")
+    if not user_id_str:
+        raise credentials_exception
 
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        print(f"Token decoded successfully. Payload: {payload}")
-    except JWTError as e:
-        print(f"JWT Error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-
-    user_id: str = payload.get("sub") or payload.get("user_id")
-    token_type: str = payload.get("token_type")
-
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token: missing user_id or sub"
-        )
-
-    if token_type != "access":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token: not an access token"
-        )
-
-    try:
-        user_id_uuid = UUID(user_id)
+        return UUID(user_id_str)
     except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token: user_id is not a valid UUID"
-        )
-
-    user_repo = UserRepository(db)
-    user = await user_repo.get_user_by_id(user_id_uuid)
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
-        )
-
-    return user
+        raise credentials_exception
 
 
+def get_token_payload(token: str = Depends(oauth2_scheme)) -> dict:
+    """
+    Возвращает полный payload токена.
+    Полезно когда нужен доступ к роли без запроса в БД.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Недействительный токен авторизации",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    payload = TokenService.verify_access_token(token)
+    if not payload:
+        raise credentials_exception
+
+    return payload
 
 
-def require_role(allowed_roles: Union[str, List[str]]):
+def require_roles(*allowed_roles: Union[Role, str]):
     """
     Фабрика зависимостей для проверки ролей.
 
-    Args:
-        allowed_roles: Строка или список разрешённых ролей
+    Использование:
+        @router.get("/admin", dependencies=[Depends(require_roles(Role.ADMIN))])
+        @router.get("/teachers", dependencies=[Depends(require_roles(Role.TEACHER, Role.ADMIN))])
+        @router.get("/any", dependencies=[Depends(require_roles("student", "teacher"))])
 
-    Примеры использования:
-        @router.post("", dependencies=[Depends(require_role("admin"))])
-        @router.post("", dependencies=[Depends(require_role(["teacher", "admin"]))])
+    Args:
+        allowed_roles: Разрешённые роли (Role enum или строки)
 
     Returns:
-        Async функция, которая проверяет роль пользователя
+        Зависимость FastAPI для проверки роли
     """
-    if isinstance(allowed_roles, str):
-        normalized_roles = [allowed_roles.lower()]
-    else:
-        normalized_roles = [role.lower() for role in allowed_roles]
+    # Нормализуем роли к lowercase строкам
+    normalized_roles = set()
+    for role in allowed_roles:
+        if isinstance(role, Role):
+            normalized_roles.add(role.value)
+        else:
+            normalized_roles.add(str(role).strip().lower())
 
-    async def role_checker(current_user: User = Depends(get_current_user)) -> User:
-        """Проверяет, что пользователь имеет одну из разрешённых ролей."""
-        user_role = current_user.role.lower()
+    async def role_checker(payload: dict = Depends(get_token_payload)) -> dict:
+        """Проверяет роль пользователя из токена."""
+        user_role = payload.get("role", "").lower()
 
-
-        if user_role == "admin":
-            return current_user
-
+        # Админ имеет доступ везде
+        if user_role == Role.ADMIN.value:
+            return payload
 
         if user_role not in normalized_roles:
+            logger.warning(
+                f"Отказ в доступе: роль '{user_role}' не в списке разрешённых {normalized_roles}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access denied. Required roles: {', '.join(normalized_roles)}"
+                detail=f"Недостаточно прав. Требуется: {', '.join(normalized_roles)}"
             )
 
-        return current_user
+        return payload
 
     return role_checker
 
 
-async def get_current_admin_user(
-        current_user: User = Depends(require_role("admin"))
-) -> User:
-    """
-    Получить текущего пользователя с проверкой роли ADMIN.
+# === Готовые зависимости для ролей ===
 
-    Альтернатива: использовать dependencies=[Depends(require_role("admin"))]
-    """
-    return current_user
+require_admin = require_roles(Role.ADMIN)
+require_teacher = require_roles(Role.TEACHER, Role.ADMIN)
+require_student = require_roles(Role.STUDENT)
+require_any_authenticated = require_roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
 
+# === Экспорт для удобства ===
 
-async def get_current_teacher_user(
-        current_user: User = Depends(require_role(["teacher", "admin"]))
-) -> User:
-    """
-    Получить текущего пользователя с проверкой роли TEACHER или ADMIN.
-
-    Альтернатива: использовать dependencies=[Depends(require_role(["teacher", "admin"]))]
-    """
-    return current_user
-
-
-async def get_current_student_user(
-        current_user: User = Depends(require_role("student"))
-) -> User:
-    """
-    Получить текущего пользователя с проверкой роли STUDENT.
-    """
-    return current_user
+__all__ = [
+    "Role",
+    "PasswordService",
+    "TokenService",
+    "oauth2_scheme",
+    "get_current_user_id",
+    "get_token_payload",
+    "require_roles",
+    "require_admin",
+    "require_teacher",
+    "require_student",
+    "require_any_authenticated",
+]

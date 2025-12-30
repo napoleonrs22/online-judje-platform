@@ -5,12 +5,10 @@ from typing import List, Optional
 
 from fastapi import HTTPException
 from passlib.context import CryptContext
-from sqlalchemy.ext.asyncio import AsyncSession
-from watchfiles import awatch
 
 from ..models.user_models import User
 from ..repository.user_repository import UserRepository
-from  ..schemas.user_schemas import  UserResponse, CreateUserRequest, UpdateUserRequest
+from  ..schemas.user_schemas import  UpdateUserRequest
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

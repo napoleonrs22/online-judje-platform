@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 auth_router = APIRouter(prefix="/api/auth", tags=["Аутентификация"])
 
 
-# === Утилиты ===
 
 def set_refresh_cookie(
         response: Response,
@@ -58,7 +57,6 @@ def clear_refresh_cookie(response: Response) -> None:
     )
 
 
-# === Эндпоинты ===
 
 @auth_router.post(
     "/register",

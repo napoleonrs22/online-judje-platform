@@ -1,4 +1,4 @@
-from .base import Base, Column, UUID, String, Integer, Text, DateTime, ForeignKey, Enum, relationship, datetime, uuid, Boolean
+from .base import Base, Column, UUID, String,  DateTime, ForeignKey, relationship, uuid, Boolean
 from .base import DifficultyLevel, CheckerType
 
 class Contest(Base):

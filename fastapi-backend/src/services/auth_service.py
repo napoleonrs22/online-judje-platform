@@ -68,7 +68,6 @@ class AuthService:
         """
         return self._password_service.verify_refresh_token(token, hashed_token)
 
-    # === Работа с пользователями в БД ===
 
     async def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         """Получает пользователя по ID."""
@@ -83,7 +82,6 @@ class AuthService:
         return result.scalars().first()
 
     async def get_user_by_username(self, username: str) -> Optional[User]:
-        """Получает пользователя по username."""
         stmt = select(User).where(User.username == username.strip())
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
@@ -230,8 +228,6 @@ async def get_current_active_user(user: User = Depends(get_current_user)) -> Use
             detail="Пользователь деактивирован"
         )
     return user
-
-
 # === Зависимости для ролей (используют get_current_user) ===
 
 async def get_current_teacher(user: User = Depends(get_current_user)) -> User:

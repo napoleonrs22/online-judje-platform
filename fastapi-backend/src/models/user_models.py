@@ -21,7 +21,6 @@ class User(Base):
     """
 
     __tablename__ = "users"
-
     id: uuid.UUID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email: str = Column(String(255), unique=True, index=True, nullable=False)
     username: str = Column(String(100), unique=True, index=True, nullable=False)

@@ -20,7 +20,7 @@ from src.models.user_models import User
 from src.models.problem_models import Problem, TestCase, Example
 from src.models.submission_models import Submission
 from src.models.contest_models import Contest
-
+from  src.models.group_models import Group, GroupAssignment
 # --- Конфиг ---
 config = context.config
 if config.config_file_name is not None:

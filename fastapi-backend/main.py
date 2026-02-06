@@ -7,15 +7,14 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy.future import select
 
-# --- Импорты из файлов проекта ---
-from src.database import init_db, AsyncSessionLocal  
+from src.database import init_db, AsyncSessionLocal
 from src.api.teacher_router import teacher_router
 from src.api.student_router import student_router
 from src.api.auth_router import auth_router
 from src.api.user_router import users
 from src.api.admin_router import router
 from src.api.dashboard_router import dashboard_router
-# 🔥 ИМПОРТ ORM-модели User
+from src.api.group_router import router as group_router
 from src.models.user_models import User
 from src.models import base as models_base  # Используем 'base' для доступа к Enum'ам
 
@@ -90,3 +89,4 @@ app.include_router(teacher_router)
 app.include_router(student_router)
 app.include_router(users)
 app.include_router(router)
+app.include_router(group_router)

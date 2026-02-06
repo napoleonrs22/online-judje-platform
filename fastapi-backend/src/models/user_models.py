@@ -43,6 +43,8 @@ class User(Base):
     # --- Связи ---
     problems = relationship("Problem", back_populates="author", cascade="all, delete-orphan")
     submissions = relationship("Submission", back_populates="user", cascade="all, delete-orphan")
+    teaching_groups = relationship("Group", back_populates="teacher", cascade="all, delete-orphan")
+    enrolled_groups = relationship("Group", secondary="group_members", back_populates="students")
 
 
     def __repr__(self) -> str:

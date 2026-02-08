@@ -7,7 +7,10 @@ toolchain go1.24.9
 
 // Никаких блоков require или replace!
 
-require github.com/docker/docker v28.5.1+incompatible
+require (
+	github.com/docker/docker v28.5.2+incompatible
+	github.com/gorilla/mux v1.8.1
+)
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect

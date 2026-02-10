@@ -1,5 +1,7 @@
-services:
+version: '3.8'
 
+services:
+  # Сервис для предварительного скачивания образов компиляторов (gcc, python и т.д.)
   images-init:
     image: docker:latest
     volumes:
@@ -34,12 +36,17 @@ services:
     env_file:
       - .env
     volumes:
+      # Доступ к Docker демону
       - /var/run/docker.sock:/var/run/docker.sock
+      # ВАЖНО: Монтируем текущую папку проекта.
+      # Путь Снаружи (${PWD}/judger_temp) = Путь Внутри.
+      - ${PWD}/judger_temp:${PWD}/judger_temp
     ports:
       - "8001:8001"
     environment:
-      JUDGER_SHARED_DIR: ${JUDGER_SHARED_DIR}
-      DOCKER_HOST: unix:///var/run/docker.sock
+      # Передаем Go этот длинный путь, чтобы он знал, куда писать
+      JUDGER_SHARED_DIR: ${PWD}/judger_temp
+      PORT: 8001
     depends_on:
       images-init:
         condition: service_completed_successfully
@@ -55,27 +62,29 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Передаем переменные БД
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DATABASE_URL: ${DATABASE_URL}
-      CODE_EXECUTION_URL: ${CODE_EXECUTION_URL}
+      DB_HOST: db
+      DB_PORT: 5432
+      # Ссылка на Go сервис
+      CODE_EXECUTION_URL: http://code-executor:8001/execute
     depends_on:
       db:
         condition: service_healthy
       code-executor:
         condition: service_started
+    # Wait-for-it скрипт (inline)
     command: >
       /bin/sh -c "
         echo 'Ожидание доступности PostgreSQL...';
-        while ! pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${POSTGRES_USER}; do
+        while ! pg_isready -h db -p 5432 -U ${POSTGRES_USER}; do
           echo 'PostgreSQL еще недоступен. Ожидание 1 секунду...';
           sleep 1;
         done;
         echo 'PostgreSQL запущен. Запуск FastAPI...';
-        exec uvicorn main:app --host 0.0.0.0 --port 8000
+        exec uvicorn main:app --host 0.0.0.0 --port 8000 --reload
       "
     restart: always
 

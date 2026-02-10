@@ -49,8 +49,8 @@
 
    ```env
    # PostgreSQL
-   POSTGRES_USER=admin
-   POSTGRES_PASSWORD=admin
+   POSTGRES_USER=user
+   POSTGRES_PASSWORD=user
    POSTGRES_DB=online_judge
    DB_HOST=db
    DB_PORT=5432

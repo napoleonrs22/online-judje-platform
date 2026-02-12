@@ -1,6 +1,6 @@
 
 // app/page.tsx
-import MainHero from "@/app/components/main/MainHero";
+import MainHero from "@/src/widgets/main-hero/ui/MainHero";
 
 export default function HomePage() {
   return <MainHero />;

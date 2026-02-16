@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { register, AuthError } from '@/lib/auth';
+import { register, AuthError } from '@/shared/api/auth';
 
 export default function RegisterPage() {
   const router = useRouter();

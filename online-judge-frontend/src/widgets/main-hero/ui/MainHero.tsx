@@ -1,5 +1,6 @@
-import { Button } from '@/src/shared/ui/button/Button';
+import { Button } from '@/shared/ui/button/Button';
 import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function MainHero() {
   return (
@@ -12,7 +13,7 @@ export default function MainHero() {
             <div>Online Judge Platform</div>
           </div>
           <div className="flex gap-4 font-medium text-xs ">
-            <Button variant="outline" size="sm">Log in</Button>
+            <Button variant="outline" size="sm"><Link href="login">Log in</Link></Button>
             <Button variant="primary" size="sm">Register</Button>
           </div>
         </div>
@@ -38,4 +39,131 @@ export default function MainHero() {
     </>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+// // app/page.tsx
+// 'use client';
+
+// import React from 'react';
+// import Link from 'next/link';
+// import { Terminal, ArrowRight, Code2, Trophy, Users } from 'lucide-react';
+// import  {Button} from "@/app/components/ui/Button";
+
+// // Если Button еще не настроен в алиасах, можно заменить на обычные <button> с классами ниже
+
+// export default function MainHero() {
+//   return (
+//     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden relative">
+
+//       {/* Фоновый эффект (Grid Pattern) - делает дизайн "дорогим" */}
+//       <div className="absolute inset-0 -z-10 h-full w-full bg-white dark:bg-slate-950 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]">
+//         <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-blue-400 opacity-20 blur-[100px]"></div>
+//       </div>
+
+//       {/* Топ бар (Header) */}
+//       <nav className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+//         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+//           {/* Логотип */}
+//           <div className="flex items-center gap-2 font-bold text-xl text-slate-900 dark:text-white">
+//             <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 p-1 rounded-md">
+//               <Terminal size={18} strokeWidth={3} />
+//             </div>
+//             CodeContest
+//           </div>
+
+//           {/* Кнопки навигации */}
+//           <div className="flex items-center gap-4">
+//             <Link href="/login">
+//               <Button variant="secondary" size="sm">
+//                 Войти
+//               </Button>
+//             </Link>
+//             <Link href="/register">
+//               <Button variant="primary" size="sm">
+//                 Регистрация
+//               </Button>
+//             </Link>
+//           </div>
+//         </div>
+//       </nav>
+
+//       {/* Основной контент (Hero Section) */}
+//       <main className="flex-1 flex flex-col items-center justify-center px-4 pt-20 pb-16 text-center max-w-5xl mx-auto space-y-8">
+
+//         {/* Бейдж "Beta" или "New" */}
+//         <div className="animate-fade-in-up inline-flex items-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1 text-sm text-slate-500 dark:text-slate-400 shadow-sm mb-4">
+//           <span className="flex h-2 w-2 rounded-full bg-blue-500 mr-2 animate-pulse"></span>
+//           Сезон 2026 открыт
+//         </div>
+
+//         {/* Заголовок */}
+//         <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 dark:text-white leading-[1.1]">
+//           Платформа для <br />
+//           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+//             профессионального роста
+//           </span>
+//         </h1>
+
+//         {/* Подзаголовок */}
+//         <p className="text-xl text-slate-500 dark:text-slate-400 max-w-2xl font-light leading-relaxed">
+//           Решай алгоритмические задачи, соревнуйся с другими разработчиками и готовься к техническим собеседованиям в IT-гиганты.
+//         </p>
+
+//         {/* Кнопки действия */}
+//         <div className="flex flex-col sm:flex-row gap-4 pt-4 w-full sm:w-auto">
+//           <Link href="/problems" className="w-full sm:w-auto">
+//             <Button size="lg" className="w-full sm:w-auto group text-base px-8 h-12">
+//               Начать решать
+//               <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+//             </Button>
+//           </Link>
+//           <Link href="/leaderboard" className="w-full sm:w-auto">
+//              <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 text-base">
+//                Таблица лидеров
+//              </Button>
+//           </Link>
+//         </div>
+
+//         {/* Статистика / Преимущества (Features) */}
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 w-full border-t border-slate-200 dark:border-slate-800 pt-10">
+//            <div className="flex flex-col items-center space-y-2">
+//               <div className="p-3 bg-blue-50 dark:bg-slate-800 rounded-full text-blue-600 dark:text-blue-400">
+//                  <Code2 size={24} />
+//               </div>
+//               <h3 className="font-semibold text-slate-900 dark:text-white">500+ Задач</h3>
+//               <p className="text-sm text-slate-500">От Easy до Hard уровня</p>
+//            </div>
+//            <div className="flex flex-col items-center space-y-2">
+//               <div className="p-3 bg-purple-50 dark:bg-slate-800 rounded-full text-purple-600 dark:text-purple-400">
+//                  <Users size={24} />
+//               </div>
+//               <h3 className="font-semibold text-slate-900 dark:text-white">Сообщество</h3>
+//               <p className="text-sm text-slate-500">Обсуждай решения</p>
+//            </div>
+//            <div className="flex flex-col items-center space-y-2">
+//               <div className="p-3 bg-amber-50 dark:bg-slate-800 rounded-full text-amber-600 dark:text-amber-400">
+//                  <Trophy size={24} />
+//               </div>
+//               <h3 className="font-semibold text-slate-900 dark:text-white">Рейтинг</h3>
+//               <p className="text-sm text-slate-500">Стань лучшим в топе</p>
+//            </div>
+//         </div>
+//       </main>
+
+//       {/* Footer (упрощенный) */}
+//       <footer className="py-6 text-center text-xs text-slate-400">
+//          © 2024 CodeContest Platform. Все права защищены.
+//       </footer>
+//     </div>
+//   );
+// }
 

@@ -74,7 +74,7 @@ async def register_user(
     - **email**: Уникальный email
     - **username**: Уникальное имя пользователя (3-20 символов)
     - **password**: Пароль (минимум 8 символов)
-    - **role**: Роль (student, teacher)
+    - **role**: Только student (преподавателя назначает администратор)
     - **full_name**: Полное имя (опционально)
     """
     logger.info(f"Регистрация нового пользователя: {user_data.email}")

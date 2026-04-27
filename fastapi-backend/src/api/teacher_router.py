@@ -43,6 +43,16 @@ async def list_my_problems(
     }
 
 
+@teacher_router.get("/students", status_code=status.HTTP_200_OK)
+async def list_students_for_assignment(
+        skip: int = 0,
+        limit: int = 200,
+        service: TeacherService = Depends(get_teacher_service),
+):
+    """Список студентов (для выдачи индивидуальных задач)."""
+    return await service.list_students(skip=skip, limit=limit)
+
+
 @teacher_router.put("/problems/{problem_id}", status_code=status.HTTP_200_OK)
 async def update_problem(
         problem_id: str,

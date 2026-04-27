@@ -1,13 +1,23 @@
-version: '3.8'
-
 services:
-  # Сервис для предварительного скачивания образов компиляторов (gcc, python и т.д.)
+  # Pre-pull compiler/runtime images for the judger (no host script = no Windows CRLF issues)
   images-init:
     image: docker:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./init-images.sh:/init-images.sh
-    command: sh /init-images.sh
+    command:
+      - sh
+      - -ec
+      - |
+        echo "Checking Docker images..."
+        for img in python:3.10-slim gcc:latest eclipse-temurin:17-jdk-alpine node:18-alpine; do
+          if docker images -q "$$img" | grep -q .; then
+            echo "Image $$img already present."
+          else
+            echo "Pulling $$img..."
+            docker pull "$$img"
+          fi
+        done
+        echo "All judger images ready."
     restart: "no"
 
   db:
@@ -23,7 +33,7 @@ services:
       - pg_data:/var/lib/postgresql/data
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -36,17 +46,15 @@ services:
     env_file:
       - .env
     volumes:
-      # Доступ к Docker демону
       - /var/run/docker.sock:/var/run/docker.sock
-      # ВАЖНО: Монтируем текущую папку проекта.
-      # Путь Снаружи (${PWD}/judger_temp) = Путь Внутри.
-      - ${PWD}/judger_temp:${PWD}/judger_temp
+      - ./judger_temp:/tmp/judger
     ports:
       - "8001:8001"
     environment:
-      # Передаем Go этот длинный путь, чтобы он знал, куда писать
-      JUDGER_SHARED_DIR: ${PWD}/judger_temp
+      JUDGER_SHARED_DIR: /tmp/judger
       PORT: 8001
+      # Резерв: абсолютный путь к папке judger_temp на машине с Docker, если bind не определился из /proc/mounts
+      JUDGER_HOST_BIND_ROOT: ${JUDGER_HOST_BIND_ROOT:-}
     depends_on:
       images-init:
         condition: service_completed_successfully
@@ -57,35 +65,36 @@ services:
       context: ./fastapi-backend
       dockerfile: Dockerfile
     container_name: fastapi_api
+    volumes:
+      # Подхватывать код с хоста вместе с --reload (иначе нужен rebuild после каждого изменения)
+      - ./fastapi-backend:/app
     env_file:
       - .env
     ports:
       - "8000:8000"
     environment:
-      # Передаем переменные БД
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       DB_HOST: db
       DB_PORT: 5432
-      # Ссылка на Go сервис
       CODE_EXECUTION_URL: http://code-executor:8001/execute
     depends_on:
       db:
         condition: service_healthy
       code-executor:
         condition: service_started
-    # Wait-for-it скрипт (inline)
-    command: >
-      /bin/sh -c "
-        echo 'Ожидание доступности PostgreSQL...';
-        while ! pg_isready -h db -p 5432 -U ${POSTGRES_USER}; do
-          echo 'PostgreSQL еще недоступен. Ожидание 1 секунду...';
-          sleep 1;
-        done;
-        echo 'PostgreSQL запущен. Запуск FastAPI...';
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "Waiting for PostgreSQL..."
+        until pg_isready -h db -p 5432 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"; do
+          echo "PostgreSQL not ready yet..."
+          sleep 1
+        done
+        echo "PostgreSQL is up. Starting FastAPI..."
         exec uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-      "
     restart: always
 
 volumes:

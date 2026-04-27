@@ -37,3 +37,12 @@ async def available_problems(
     current_user: User = Depends(get_current_active_user)
 ):
     return await service.get_available_problems(current_user.id, skip, limit)
+
+
+@dashboard_router.get("/me-stats")
+async def my_dashboard_stats(
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Сводка для дашборда: рейтинг, ранг, решённые, активность за неделю, последние посылки."""
+    return await service.get_my_stats(current_user)

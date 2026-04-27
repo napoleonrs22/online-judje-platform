@@ -1,7 +1,7 @@
 # fastapi-backend/src/schemas/schemas.py
 
 from pydantic import BaseModel, ConfigDict, Field, EmailStr
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 from datetime import datetime
 import uuid
 
@@ -25,11 +25,12 @@ class UserBase(BaseModel):
 
 
 class UserCreate(BaseModel):
-    """Создание нового пользователя."""
+    """Публичная регистрация: только студенты. Роли teacher/admin — через админку."""
+
     email: EmailStr
     username: str
     password: str = Field(..., min_length=8, max_length=72)
-    role: Literal["student", "teacher", "admin"] = "student"
+    role: Literal["student"] = "student"
     full_name: Optional[str] = None
 
 
@@ -107,6 +108,10 @@ class ProblemCreate(BaseModel):
     examples: List[ExampleCreate] = []
     test_cases: List[TestCaseCreate] = Field(..., min_items=1)
     is_public: bool = False
+    assigned_student_ids: List[uuid.UUID] = Field(
+        default_factory=list,
+        description="Студенты, которым видна задача, если is_public=false",
+    )
 
 
 class ProblemUpdate(BaseModel):
@@ -119,6 +124,10 @@ class ProblemUpdate(BaseModel):
     difficulty: Optional[DifficultyLevel] = None
     checker_type: Optional[CheckerType] = None
     is_public: Optional[bool] = None
+    assigned_student_ids: Optional[List[uuid.UUID]] = Field(
+        None,
+        description="Полная замена списка назначенных студентов",
+    )
 
 
 class ProblemResponse(ProblemBase):
@@ -154,6 +163,7 @@ class SubmissionResponse(BaseModel):
     language: Optional[str] = None
     execution_time: Optional[float] = None
     memory_used: Optional[float] = None
+    test_results: Optional[List[dict[str, Any]]] = None
 
 
 # ============ GO-EXECUTOR SCHEMAS ============

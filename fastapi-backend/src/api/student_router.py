@@ -83,11 +83,15 @@ async def delete_pending_submission(
 
 @student_router.get("/problems", response_model=List[ProblemBase])
 async def list_problems(
-        services: Dict = Depends(get_services)  
+        services: Dict = Depends(get_services),
+        skip: int = 0,
+        limit: int = 100,
 ):
-    """Получение списка всех опубликованных задач."""
-    problems = await services["problem"].problem_repo.list_public_problems()
-
+    """Опубликованные задачи и задачи, назначенные текущему пользователю."""
+    current_user = services["current_user"]
+    problems = await services["problem"].problem_repo.list_available_problems(
+        current_user.id, skip, limit
+    )
     return problems
 
 

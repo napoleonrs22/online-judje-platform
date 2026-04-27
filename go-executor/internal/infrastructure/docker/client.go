@@ -65,10 +65,22 @@ func (d *DockerExecutor) Compile(ctx context.Context, code, language, workDir st
 		return fileName, nil
 	}
 
-	// 5. Запускаем компиляцию в Docker
+	// 5. Запускаем компиляцию в Docker (файлы в /app через CopyToContainer, без bind)
 	log.Printf("🔨 Compiling %s (file: %s)...", language, fileName)
 
-	resp, err := d.runContainer(ctx, cfg.Image, cfg.CompileCmd, workDir, nil, 3000, 1024)
+	var after func(context.Context, string) error
+	if language == "java" {
+		after = func(c context.Context, cid string) error {
+			return d.copyJavaClasses(c, cid, workDir)
+		}
+	} else {
+		bin := cfg.BinName
+		after = func(c context.Context, cid string) error {
+			return d.copyPathFromContainer(c, cid, "/app/"+bin, filepath.Join(workDir, bin))
+		}
+	}
+
+	resp, err := d.runContainer(ctx, cfg.Image, cfg.CompileCmd, "", workDir, nil, 3000, 1024, nil, after)
 	if err != nil {
 		return "", err
 	}
@@ -89,17 +101,8 @@ func (d *DockerExecutor) Run(ctx context.Context, binPath, language, workDir, in
 		return domain.TestResult{Status: "INTERNAL_ERROR"}, err
 	}
 
-	// Создаем файл с входными данными
-	inputFile := "input.txt"
-	if err := os.WriteFile(filepath.Join(workDir, inputFile), []byte(inputData), 0777); err != nil {
-		return domain.TestResult{Status: "INTERNAL_ERROR"}, err
-	}
-
-	// Формируем команду запуска: command < input.txt
-	fullCmd := []string{"sh", "-c", fmt.Sprintf("%s < %s", strings.Join(cfg.RunCmd, " "), inputFile)}
-
-	// Запускаем контейнер
-	res, err := d.runContainer(ctx, cfg.Image, fullCmd, workDir, nil, timeLimit, memLimit)
+	// Файлы в /app через CopyToContainer; ввод в stdin через Attach.
+	res, err := d.runContainer(ctx, cfg.Image, cfg.RunCmd, "", workDir, nil, timeLimit, memLimit, []byte(inputData), nil)
 
 	if err != nil {
 		return domain.TestResult{Status: "INTERNAL_ERROR", ActualOutput: err.Error()}, nil
@@ -115,9 +118,20 @@ func (d *DockerExecutor) Run(ctx context.Context, binPath, language, workDir, in
 		status = "RUNTIME_ERROR"
 	}
 
+	actualOut := strings.TrimSpace(res.Stdout)
+	if res.ExitCode != 0 {
+		if se := strings.TrimSpace(res.Stderr); se != "" {
+			if actualOut != "" {
+				actualOut = se + "\n" + actualOut
+			} else {
+				actualOut = se
+			}
+		}
+	}
+
 	return domain.TestResult{
 		Status:          status,
-		ActualOutput:    strings.TrimSpace(res.Stdout),
+		ActualOutput:    actualOut,
 		ExecutionTimeMs: int(res.Duration.Milliseconds()),
 		MemoryUsedMB:    int(res.MemoryUsed / 1024 / 1024),
 	}, nil
@@ -125,4 +139,22 @@ func (d *DockerExecutor) Run(ctx context.Context, binPath, language, workDir, in
 
 func (d *DockerExecutor) Cleanup(workDir string) {
 	os.RemoveAll(workDir)
+}
+
+func (d *DockerExecutor) copyPathFromContainer(ctx context.Context, containerID, srcPath, destHostPath string) error {
+	r, _, err := d.cli.CopyFromContainer(ctx, containerID, srcPath)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	return copyFileFromContainerTar(r, destHostPath)
+}
+
+func (d *DockerExecutor) copyJavaClasses(ctx context.Context, containerID, destDir string) error {
+	r, _, err := d.cli.CopyFromContainer(ctx, containerID, "/app")
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	return extractClassFilesFromTar(r, destDir)
 }

@@ -6,7 +6,7 @@ export interface RegisterData {
   email: string;
   password: string;
   full_name: string;
-  role: 'student' | 'teacher';
+  role: 'student';
 }
 
 export interface LoginData {
@@ -21,6 +21,17 @@ export interface AuthResponse {
   role: string;
   full_name: string;
   rating: number;
+}
+
+/** GET /auth/me */
+export interface CurrentUser {
+  id: string;
+  email: string;
+  username: string;
+  full_name: string;
+  role: string;
+  rating: number;
+  created_at?: string;
 }
 
 export interface TokenResponse {
@@ -153,4 +164,23 @@ export function getToken(): string | null {
  */
 export function isAuthenticated(): boolean {
   return getToken() !== null;
+}
+
+export async function fetchCurrentUser(): Promise<CurrentUser> {
+  const token = getToken();
+  if (!token) {
+    throw new AuthError(401, "Not authenticated");
+  }
+  const response = await fetch(`${API_URL}/auth/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      logout();
+    }
+    throw new AuthError(response.status, "Failed to load user");
+  }
+  return response.json();
 }

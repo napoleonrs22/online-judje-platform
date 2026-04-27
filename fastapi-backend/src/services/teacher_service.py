@@ -2,6 +2,7 @@
 
 from typing import List
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
@@ -81,11 +82,33 @@ class TeacherService:
                 "id": str(p.id),
                 "title": p.title,
                 "slug": p.slug,
-                "difficulty": p.difficulty,
+                "difficulty": p.difficulty.value if hasattr(p.difficulty, "value") else str(p.difficulty),
                 "is_public": p.is_public,
-                "created_at": p.created_at
+                "assigned_student_ids": [str(x) for x in (p.assigned_student_ids or [])],
+                "created_at": p.created_at.isoformat() if p.created_at else None,
             }
-            for p in problems[skip:skip + limit]
+            for p in problems[skip : skip + limit]
+        ]
+
+    async def list_students(self, skip: int = 0, limit: int = 200) -> List[dict]:
+        """Список студентов для назначения задач."""
+        stmt = (
+            select(User)
+            .where(User.role == "student")
+            .order_by(User.username)
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await self.db.execute(stmt)
+        users = result.scalars().all()
+        return [
+            {
+                "id": str(u.id),
+                "username": u.username,
+                "email": u.email,
+                "full_name": u.full_name or "",
+            }
+            for u in users
         ]
 
     async def update_problem(self, problem_id: str, problem_data: ProblemUpdate) -> dict:

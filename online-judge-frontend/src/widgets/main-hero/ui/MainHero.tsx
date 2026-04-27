@@ -1,8 +1,67 @@
-import { Button } from '@/shared/ui/button/Button';
-import { ArrowRight } from 'lucide-react';
-import Link from 'next/link';
+"use client";
+
+import {useState} from "react";
+import {useLocale, useTranslations} from "next-intl";
+import {ArrowRight} from "lucide-react";
+import {Button} from "@/shared/ui/button/Button";
+import {Link, usePathname, useRouter} from "../../../../i18n/navigation";
+import {AuthError, fetchCurrentUser, isAuthenticated} from "@/shared/api/auth";
+import {getStartCodingPath} from "@/shared/lib/role-home";
 
 export default function MainHero() {
+  const t = useTranslations("MainHero");
+  const localeT = useTranslations("Locale");
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [navPending, setNavPending] = useState<"coding" | "docs" | null>(null);
+
+  const locales = ["en", "ru", "kk"] as const;
+
+  const handleLocaleChange = (nextLocale: "en" | "ru" | "kk") => {
+    router.replace(pathname, {locale: nextLocale});
+  };
+
+  const goLogin = () => {
+    router.push("/login");
+  };
+
+  const handleStartCoding = async () => {
+    if (!isAuthenticated()) {
+      goLogin();
+      return;
+    }
+    setNavPending("coding");
+    try {
+      const user = await fetchCurrentUser();
+      router.push(getStartCodingPath(user.role));
+    } catch (e) {
+      if (e instanceof AuthError && e.statusCode === 401) {
+        goLogin();
+      }
+    } finally {
+      setNavPending(null);
+    }
+  };
+
+  const handleDocumentation = async () => {
+    if (!isAuthenticated()) {
+      goLogin();
+      return;
+    }
+    setNavPending("docs");
+    try {
+      await fetchCurrentUser();
+      router.push("/docs");
+    } catch (e) {
+      if (e instanceof AuthError && e.statusCode === 401) {
+        goLogin();
+      }
+    } finally {
+      setNavPending(null);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col min-h-screen bg-[#0F172A] w-full ">
@@ -10,24 +69,56 @@ export default function MainHero() {
         {/* NAV */}
         <div className="flex flex-row items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <div>Online Judge Platform</div>
+            <div>{t("brand")}</div>
           </div>
-          <div className="flex gap-4 font-medium text-xs ">
-            <Button variant="outline" size="sm"><Link href="login">Log in</Link></Button>
-            <Button variant="primary" size="sm">Register</Button>
+          <div className="flex items-center gap-3 font-medium text-xs ">
+            <div className="flex items-center rounded-full border border-slate-700 bg-slate-900/70 p-1 shadow-sm">
+              {locales.map((loc) => (
+                <button
+                  key={loc}
+                  type="button"
+                  onClick={() => handleLocaleChange(loc)}
+                  className={`min-w-10 rounded-full px-3 py-1.5 text-[11px] tracking-wide transition-all ${
+                    locale === loc
+                      ? "bg-white text-slate-900 shadow"
+                      : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  }`}
+                >
+                  {localeT(loc)}
+                </button>
+              ))}
+            </div>
+            <Button variant="outline" size="sm"><Link href="/login">{t("login")}</Link></Button>
+            <Button variant="primary" size="sm"><Link href="/register">{t("register")}</Link></Button>
           </div>
         </div>
 
         {/* HERO */}
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-4xl mx-auto space-y-8" >
 
-          <h1 className='text-5xl md:text-7xl font-bold tracking-tight text-slate-900 dark:text-white'>Master the code</h1>
+          <h1 className='text-5xl md:text-7xl font-bold tracking-tight text-slate-900 dark:text-white'>{t("title")}</h1>
 
-          <p className="text-xl text-slate-500 max-w-2xl font-light">A strict, no-distraction environment for developers to solve problems, compete in groups, and improve algorithmic skills.</p>
+          <p className="text-xl text-slate-500 max-w-2xl font-light">{t("subtitle")}</p>
 
           <div className="flex gap-4 pt-4">
-            <Button size="lg">Start Coding <ArrowRight size={18} /></Button>
-            <Button size="lg" variant="outline">Documentation</Button>
+            <Button
+              size="lg"
+              type="button"
+              disabled={navPending !== null}
+              onClick={handleStartCoding}
+              className="inline-flex items-center gap-2"
+            >
+              {t("startCoding")} <ArrowRight size={18} />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              type="button"
+              disabled={navPending !== null}
+              onClick={handleDocumentation}
+            >
+              {t("documentation")}
+            </Button>
           </div>
         </div>
 

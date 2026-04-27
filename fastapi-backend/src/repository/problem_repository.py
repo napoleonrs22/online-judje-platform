@@ -220,10 +220,19 @@ class ProblemRepository:
         }
 
     async def list_available_problems(self, user_id: uuid.UUID, skip: int = 0, limit: int  = 50) -> List[Problem]:
-        stmt = select(Problem).where(
-            or_(Problem.is_public == True,
-                Problem.assigned_student_ids.contains([user_id]))
-        ).order_by(Problem.created_at.desc()).offset(skip).limit(limit)
+        stmt = (
+            select(Problem)
+            .where(
+                or_(
+                    Problem.is_public == True,
+                    Problem.assigned_student_ids.contains([user_id]),
+                )
+            )
+            .options(selectinload(Problem.author))
+            .order_by(Problem.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
 
         result = await self.db.execute(stmt)
 

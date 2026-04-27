@@ -1,38 +1,50 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/shared/ui/card/Card'; 
 import { Button } from '@/shared/ui/button/Button';
 import {useForm, SubmitHandler} from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-// import { Input } from '@/shared/ui/input'; // TODO: создать Input компонент
-// import { Terminal } from 'lucide-react';
+import { Link, useRouter } from '../../../../i18n/navigation';
+import { AuthError, fetchCurrentUser, login } from '@/shared/api/auth';
+import { getPostLoginPath } from '@/shared/lib/role-home';
 
 interface LoginProps {
   onLogin?: () => void;
   onRegister?: () => void;
 }
 
-// Схема валидации с правильным синтаксисом zod
 const loginSchema = z.object({
-  email: z.email('Некорректный email'),  // z.string().email(), а не z.email()
-  password: z.string().min(6, 'Минимум 6 символов').max(12, 'Максимум 12 символов')
-})
+  email: z.string().email('Некорректный email'),
+  password: z.string().min(6, 'Минимум 6 символов').max(128, 'Слишком длинный пароль'),
+});
 
 type LoginSchema = z.infer<typeof loginSchema>;
 
 
-export const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
+export const Login: React.FC<LoginProps> = ({ onRegister }) => {
+  const router = useRouter();
+  const [formError, setFormError] = useState<string | null>(null);
 
-  // Подключаем zodResolver для автоматической валидации
   const {register, handleSubmit, formState: {errors, isSubmitting}} = useForm<LoginSchema>({
-    resolver: zodResolver(loginSchema)  // Это связывает zod схему с react-hook-form
-  })
+    resolver: zodResolver(loginSchema),
+  });
 
-  const onSubmit: SubmitHandler<LoginSchema> = (data) => {
-    console.log(data)
-  }
+  const onSubmit: SubmitHandler<LoginSchema> = async (data) => {
+    setFormError(null);
+    try {
+      await login({ email: data.email, password: data.password });
+      const user = await fetchCurrentUser();
+      router.push(getPostLoginPath(user.role));
+    } catch (err) {
+      if (err instanceof AuthError) {
+        setFormError(err.message);
+        return;
+      }
+      setFormError('Ошибка входа');
+    }
+  };
 
 
   return (
@@ -47,6 +59,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+          {formError && (
+            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+              {formError}
+            </p>
+          )}
           {/* Email поле */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium  text-slate-900 dark:text-white mb-1">
@@ -88,10 +105,16 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
         </form>
 
         <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center text-sm text-slate-500">
-          Don't have an account?{' '}
-          <button onClick={onRegister} className=" font-medium  text-slate-500 hover:cursor-pointer hover:text-white">
-            Create Account
-          </button>
+          Don&apos;t have an account?{' '}
+          {onRegister ? (
+            <button type="button" onClick={onRegister} className="font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              Create Account
+            </button>
+          ) : (
+            <Link href="/register" className="font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              Create Account
+            </Link>
+          )}
         </div>
       </Card>
     </div>

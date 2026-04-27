@@ -65,7 +65,8 @@ class UserService:
     async def list_users(self, skip: int = 0, limit: int = 100, role: Optional[str] = None) -> List[User]:
         users = await self.user_repository.list_users(skip, limit)
         if role:
-            users = [u for u in users if u.role == role]
+            rlow = role.strip().lower()
+            users = [u for u in users if str(u.role).lower() == rlow]
         return users
 
 

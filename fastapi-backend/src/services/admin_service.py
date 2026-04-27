@@ -64,7 +64,9 @@ class AdminUserService(UserService):
     async def delete_user_as_admin(self, user_id: uuid.UUID) -> bool:
         return await self.user_repository.delete_user(user_id)
 
-    async def  change_user_role(self, user_id: uuid.UUID, new_role: str) -> Optional[User]:
-        if new_role not in ["STUDENT", "ADMIN", "TEACHER"]:
+    async def change_user_role(self, user_id: uuid.UUID, new_role: str) -> Optional[User]:
+        normalized = (new_role or "").strip().upper()
+        if normalized not in ["STUDENT", "ADMIN", "TEACHER"]:
             raise ValueError("Неверная роль")
-        return await self.user_repository.update_user(user_id,{"role":new_role})
+        role_value = normalized.lower()
+        return await self.user_repository.update_user(user_id, {"role": role_value})

@@ -41,10 +41,23 @@ class SubmissionService:
             )
         )
 
-        if not problem_with_tests or not problem_with_tests.is_public:
+        if not problem_with_tests:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Задача не найдена или не опубликована",
+                detail="Задача не найдена",
+            )
+
+        assigned = getattr(problem_with_tests, "assigned_student_ids", None) or []
+        author_id = problem_with_tests.user_id
+        can_submit = (
+            problem_with_tests.is_public
+            or user_id == author_id
+            or user_id in assigned
+        )
+        if not can_submit:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Задача не найдена или доступ к отправке запрещён",
             )
 
         db_submission = await self.submission_repository.create_submission(
@@ -90,10 +103,17 @@ class SubmissionService:
                 db_submission.test_results = [
                     res.model_dump() for res in judge_result.test_results
                 ]
-                db_submission.error_message = judge_result.error_message
-
                 final_status = db_submission.status
+                detail = (judge_result.error_message or "").strip()
+                if not detail:
+                    for tr in judge_result.test_results:
+                        if not tr.is_passed:
+                            detail = (tr.actual_output or tr.details or "").strip()
+                            if detail:
+                                break
                 message = f"Вердикт: {final_status.value}"
+                if detail:
+                    message = f"{message} — {detail}"
 
         except httpx.ConnectError:
             message = f"Ошибка: Go-Executor недоступен по адресу {CODE_EXECUTION_URL}"
